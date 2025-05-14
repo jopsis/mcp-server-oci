@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "mcp-server-oci": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/jocebal/Work/mcp/mcp-server-oci",
+        "run",
+        "python",
+        "-m",
+        "mcp_server_oci.mcp_server",
+        "--profile", "DEFAULT"
+      ],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}

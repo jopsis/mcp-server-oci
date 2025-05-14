@@ -1,0 +1,2 @@
+[console_scripts]
+mcp-server-oci = mcp_server_oci.mcp_server:main
