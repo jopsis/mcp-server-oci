@@ -21,6 +21,8 @@ from mcp_server_oci.tools.instances import (
     get_instance,
     start_instance,
     stop_instance,
+    create_instance,
+    terminate_instance,
 )
 
 # Setup logging
@@ -182,6 +184,100 @@ async def stop_instance_tool(ctx: Context, instance_id: str, force: bool = False
         return result
     except Exception as e:
         error_msg = f"Error stopping instance: {str(e)}"
+        await ctx.error(error_msg)
+        return {"error": error_msg}
+
+
+@mcp.tool(name="create_instance")
+async def create_instance_tool(
+    ctx: Context,
+    compartment_id: str,
+    availability_domain: str,
+    subnet_id: str,
+    shape: str,
+    display_name: str,
+    image_id: str,
+    metadata: Dict[str, str] = None,
+    boot_volume_size_in_gbs: Optional[int] = None,
+    shape_config: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Create a new compute instance.
+    
+    Args:
+        compartment_id: OCID of the compartment
+        availability_domain: Availability domain name
+        subnet_id: OCID of the subnet
+        shape: Compute shape name
+        display_name: Display name for the instance
+        image_id: OCID of the image to use
+        metadata: Optional metadata to include with the instance
+        boot_volume_size_in_gbs: Optional boot volume size in GB
+        shape_config: Optional shape configuration (e.g., OCPUs, memory)
+        
+    Returns:
+        Details of the created instance
+    """
+    try:
+        await ctx.info(f"Creating instance {display_name} in compartment {compartment_id}...")
+        result = create_instance(
+            oci_clients["compute"],
+            oci_clients["network"],
+            compartment_id,
+            availability_domain,
+            subnet_id,
+            shape,
+            display_name,
+            image_id,
+            metadata,
+            boot_volume_size_in_gbs,
+            shape_config,
+        )
+        
+        if result.get("success", False):
+            await ctx.info(f"Instance creation initiated successfully. Current state: {result.get('lifecycle_state', 'PROVISIONING')}")
+        else:
+            await ctx.error(f"Instance creation failed: {result.get('message', 'Unknown error')}")
+            
+        return result
+    except Exception as e:
+        error_msg = f"Error creating instance: {str(e)}"
+        await ctx.error(error_msg)
+        return {"error": error_msg}
+
+
+@mcp.tool(name="terminate_instance")
+async def terminate_instance_tool(
+    ctx: Context,
+    instance_id: str,
+    preserve_boot_volume: bool = False,
+) -> Dict[str, Any]:
+    """
+    Terminate (delete) a compute instance.
+    
+    Args:
+        instance_id: OCID of the instance to terminate
+        preserve_boot_volume: If True, the boot volume will be preserved after the instance is terminated
+        
+    Returns:
+        Result of the operation
+    """
+    try:
+        await ctx.info(f"Terminating instance {instance_id}...")
+        result = terminate_instance(
+            oci_clients["compute"],
+            instance_id,
+            preserve_boot_volume,
+        )
+        
+        if result.get("success", False):
+            await ctx.info(f"Instance termination operation completed with status: {result.get('current_state', 'UNKNOWN')}")
+        else:
+            await ctx.error(f"Instance termination failed: {result.get('message', 'Unknown error')}")
+            
+        return result
+    except Exception as e:
+        error_msg = f"Error terminating instance: {str(e)}"
         await ctx.error(error_msg)
         return {"error": error_msg}
 

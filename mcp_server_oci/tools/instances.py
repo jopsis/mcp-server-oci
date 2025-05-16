@@ -238,3 +238,202 @@ def stop_instance(compute_client: oci.core.ComputeClient, instance_id: str, forc
     except Exception as e:
         logger.exception(f"Error stopping instance: {e}")
         raise
+
+
+def create_instance(
+    compute_client: oci.core.ComputeClient,
+    network_client: oci.core.VirtualNetworkClient,
+    compartment_id: str,
+    availability_domain: str,
+    subnet_id: str,
+    shape: str,
+    display_name: str,
+    image_id: str,
+    metadata: Dict[str, str] = None,
+    boot_volume_size_in_gbs: Optional[int] = None,
+    shape_config: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Create a new compute instance.
+    
+    Args:
+        compute_client: OCI Compute client
+        network_client: OCI VirtualNetwork client
+        compartment_id: OCID of the compartment
+        availability_domain: Availability domain name
+        subnet_id: OCID of the subnet
+        shape: Compute shape name
+        display_name: Display name for the instance
+        image_id: OCID of the image to use
+        metadata: Optional metadata to include with the instance
+        boot_volume_size_in_gbs: Optional boot volume size in GB
+        shape_config: Optional shape configuration (e.g., OCPUs, memory)
+        
+    Returns:
+        Details of the created instance
+    """
+    try:
+        # Create instance details
+        create_instance_details = oci.core.models.LaunchInstanceDetails(
+            compartment_id=compartment_id,
+            availability_domain=availability_domain,
+            display_name=display_name,
+            shape=shape,
+            metadata=metadata or {},
+            source_details=oci.core.models.InstanceSourceViaImageDetails(
+                source_type="image",
+                image_id=image_id,
+                boot_volume_size_in_gbs=boot_volume_size_in_gbs,
+            ),
+            create_vnic_details=oci.core.models.CreateVnicDetails(
+                subnet_id=subnet_id,
+                assign_public_ip=True,
+            ),
+        )
+        
+        # Add shape config if provided
+        if shape_config:
+            shape_config_obj = oci.core.models.LaunchInstanceShapeConfigDetails()
+            if "ocpus" in shape_config:
+                shape_config_obj.ocpus = float(shape_config["ocpus"])
+            if "memory_in_gbs" in shape_config:
+                shape_config_obj.memory_in_gbs = float(shape_config["memory_in_gbs"])
+            create_instance_details.shape_config = shape_config_obj
+        
+        # Launch the instance
+        logger.info(f"Creating instance {display_name} in compartment {compartment_id}")
+        launch_instance_response = compute_client.launch_instance(create_instance_details)
+        instance_id = launch_instance_response.data.id
+        
+        # Wait for the instance to become available (max 60 seconds for response)
+        max_wait_time = 60
+        wait_interval = 10
+        total_waited = 0
+        
+        while total_waited < max_wait_time:
+            time.sleep(wait_interval)
+            total_waited += wait_interval
+            
+            try:
+                instance = compute_client.get_instance(instance_id).data
+                if instance.lifecycle_state not in ["PROVISIONING", "CREATING"]:
+                    # Instance is no longer in a provisioning state
+                    
+                    # Get VNIC attachment to retrieve public IP
+                    vnic_attachments = oci.pagination.list_call_get_all_results(
+                        compute_client.list_vnic_attachments,
+                        compartment_id,
+                        instance_id=instance_id
+                    ).data
+                    
+                    public_ip = None
+                    private_ip = None
+                    
+                    if vnic_attachments:
+                        vnic_id = vnic_attachments[0].vnic_id
+                        vnic = network_client.get_vnic(vnic_id).data
+                        public_ip = vnic.public_ip
+                        private_ip = vnic.private_ip
+                    
+                    return {
+                        "success": instance.lifecycle_state == "RUNNING",
+                        "message": f"Instance {display_name} created with ID: {instance_id}",
+                        "instance_id": instance_id,
+                        "name": instance.display_name,
+                        "lifecycle_state": instance.lifecycle_state,
+                        "compartment_id": instance.compartment_id,
+                        "availability_domain": instance.availability_domain,
+                        "shape": instance.shape,
+                        "public_ip": public_ip,
+                        "private_ip": private_ip,
+                    }
+            except oci.exceptions.ServiceError as se:
+                if se.status == 404:
+                    # Instance not found yet, keep waiting
+                    continue
+                raise
+        
+        # If we get here, the instance is still provisioning
+        return {
+            "success": True,
+            "message": f"Instance {display_name} is being provisioned with ID: {instance_id}. Check status later.",
+            "instance_id": instance_id,
+            "lifecycle_state": "PROVISIONING",
+        }
+        
+    except Exception as e:
+        logger.exception(f"Error creating instance: {e}")
+        raise
+
+
+def terminate_instance(
+    compute_client: oci.core.ComputeClient,
+    instance_id: str,
+    preserve_boot_volume: bool = False
+) -> Dict[str, Any]:
+    """
+    Terminate (delete) a compute instance.
+    
+    Args:
+        compute_client: OCI Compute client
+        instance_id: OCID of the instance to terminate
+        preserve_boot_volume: If True, the boot volume will be preserved after the instance is terminated
+        
+    Returns:
+        Result of the operation
+    """
+    try:
+        # Check if instance exists and get its details
+        instance = compute_client.get_instance(instance_id).data
+        instance_name = instance.display_name
+        
+        # Terminate the instance
+        logger.info(f"Terminating instance {instance_name} ({instance_id})")
+        compute_client.terminate_instance(instance_id, preserve_boot_volume=preserve_boot_volume)
+        
+        # Wait for the instance to be terminated (max 30 seconds for response)
+        max_wait_time = 30
+        wait_interval = 5
+        total_waited = 0
+        
+        while total_waited < max_wait_time:
+            time.sleep(wait_interval)
+            total_waited += wait_interval
+            
+            try:
+                current_instance = compute_client.get_instance(instance_id).data
+                if current_instance.lifecycle_state == "TERMINATED":
+                    return {
+                        "success": True,
+                        "message": f"Successfully terminated instance {instance_name} ({instance_id})",
+                        "current_state": current_instance.lifecycle_state,
+                    }
+            except oci.exceptions.ServiceError as se:
+                if se.status == 404:
+                    # Instance not found, means it's been fully terminated
+                    return {
+                        "success": True,
+                        "message": f"Successfully terminated instance {instance_name} ({instance_id})",
+                        "current_state": "TERMINATED",
+                    }
+                raise
+        
+        # If we get here, the instance is still terminating
+        return {
+            "success": True,
+            "message": f"Instance {instance_name} ({instance_id}) is being terminated. Check status later.",
+            "current_state": "TERMINATING",
+        }
+        
+    except oci.exceptions.ServiceError as se:
+        if se.status == 404:
+            return {
+                "success": False,
+                "message": f"Instance {instance_id} not found",
+                "current_state": "NOT_FOUND",
+            }
+        logger.exception(f"Service error terminating instance: {se}")
+        raise
+    except Exception as e:
+        logger.exception(f"Error terminating instance: {e}")
+        raise
