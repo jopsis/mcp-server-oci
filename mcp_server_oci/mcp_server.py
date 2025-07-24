@@ -30,6 +30,58 @@ from mcp_server_oci.tools.network import (
     list_vnics,
     get_vnic,
 )
+from mcp_server_oci.tools.identity import (
+    list_users,
+    get_user,
+    list_groups,
+    get_group,
+    list_policies,
+    get_policy,
+    list_dynamic_groups,
+    get_dynamic_group,
+)
+from mcp_server_oci.tools.storage import (
+    list_buckets,
+    get_bucket,
+    list_volumes,
+    get_volume,
+    list_boot_volumes,
+    get_boot_volume,
+    list_file_systems,
+    get_file_system,
+)
+from mcp_server_oci.tools.database import (
+    list_db_systems,
+    get_db_system,
+    list_databases,
+    get_database,
+    list_autonomous_databases,
+    get_autonomous_database,
+)
+from mcp_server_oci.tools.security import (
+    list_security_lists,
+    get_security_list,
+    list_network_security_groups,
+    get_network_security_group,
+    list_vaults,
+    get_vault,
+)
+from mcp_server_oci.tools.load_balancer import (
+    list_load_balancers,
+    get_load_balancer,
+    list_network_load_balancers,
+    get_network_load_balancer,
+)
+from mcp_server_oci.tools.resources import (
+    list_availability_domains,
+    list_fault_domains,
+    list_images,
+    get_image,
+    list_shapes,
+    get_namespace,
+    list_regions,
+    get_tenancy_info,
+)
 
 
 # Setup logging
@@ -73,11 +125,25 @@ def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
         compute_client = oci.core.ComputeClient(config)
         identity_client = oci.identity.IdentityClient(config)
         network_client = oci.core.VirtualNetworkClient(config)
+        object_storage_client = oci.object_storage.ObjectStorageClient(config)
+        block_storage_client = oci.core.BlockstorageClient(config)
+        file_storage_client = oci.file_storage.FileStorageClient(config)
+        database_client = oci.database.DatabaseClient(config)
+        load_balancer_client = oci.load_balancer.LoadBalancerClient(config)
+        network_load_balancer_client = oci.network_load_balancer.NetworkLoadBalancerClient(config)
+        kms_vault_client = oci.key_management.KmsVaultClient(config)
         
         oci_clients = {
             "compute": compute_client,
             "identity": identity_client,
             "network": network_client,
+            "object_storage": object_storage_client,
+            "block_storage": block_storage_client,
+            "file_storage": file_storage_client,
+            "database": database_client,
+            "load_balancer": load_balancer_client,
+            "network_load_balancer": network_load_balancer_client,
+            "kms_vault": kms_vault_client,
             "config": config,
         }
         
@@ -359,6 +425,87 @@ async def get_vnic_details(ctx: Context, vnic_id: str) -> Dict[str, Any]:
 #
 # Utility tools
 #
+
+@mcp.tool(name="get_namespace")
+async def get_namespace_tool(ctx: Context) -> Dict[str, Any]:
+    """
+    Get the Object Storage namespace for the tenancy.
+    
+    Returns:
+        Object Storage namespace details
+    """
+    try:
+        await ctx.info("Getting Object Storage namespace...")
+        result = get_namespace(oci_clients["object_storage"])
+        await ctx.info(f"Retrieved namespace: {result['namespace']}")
+        return result
+    except Exception as e:
+        error_msg = f"Error getting namespace: {str(e)}"
+        await ctx.error(error_msg)
+        return {"error": error_msg}
+
+
+@mcp.tool(name="list_availability_domains")
+async def get_availability_domains(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all availability domains in a compartment.
+    
+    Args:
+        compartment_id: OCID of the compartment
+        
+    Returns:
+        List of availability domains with their details
+    """
+    try:
+        await ctx.info(f"Listing availability domains in compartment {compartment_id}...")
+        result = list_availability_domains(oci_clients["identity"], compartment_id)
+        await ctx.info(f"Found {len(result)} availability domains")
+        return result
+    except Exception as e:
+        error_msg = f"Error listing availability domains: {str(e)}"
+        await ctx.error(error_msg)
+        return [{"error": error_msg}]
+
+
+@mcp.tool(name="list_regions")
+async def get_regions(ctx: Context) -> List[Dict[str, Any]]:
+    """
+    List all available regions.
+    
+    Returns:
+        List of regions with their details
+    """
+    try:
+        await ctx.info("Listing available regions...")
+        result = list_regions(oci_clients["identity"])
+        await ctx.info(f"Found {len(result)} regions")
+        return result
+    except Exception as e:
+        error_msg = f"Error listing regions: {str(e)}"
+        await ctx.error(error_msg)
+        return [{"error": error_msg}]
+
+
+@mcp.tool(name="get_tenancy_info")
+async def get_tenancy_details(ctx: Context, tenancy_id: str) -> Dict[str, Any]:
+    """
+    Get tenancy information.
+    
+    Args:
+        tenancy_id: OCID of the tenancy
+        
+    Returns:
+        Tenancy details
+    """
+    try:
+        await ctx.info(f"Getting tenancy details for {tenancy_id}...")
+        result = get_tenancy_info(oci_clients["identity"], tenancy_id)
+        await ctx.info(f"Retrieved tenancy details successfully")
+        return result
+    except Exception as e:
+        error_msg = f"Error getting tenancy details: {str(e)}"
+        await ctx.error(error_msg)
+        return {"error": error_msg}
 
 
 
