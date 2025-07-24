@@ -7,7 +7,7 @@ import asyncio
 import json
 import os
 import sys
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union, Tuple
 
 import oci
 from loguru import logger
@@ -21,9 +21,16 @@ from mcp_server_oci.tools.instances import (
     get_instance,
     start_instance,
     stop_instance,
-    create_instance,
-    terminate_instance,
 )
+from mcp_server_oci.tools.network import (
+    list_vcns,
+    get_vcn,
+    list_subnets,
+    get_subnet,
+    list_vnics,
+    get_vnic,
+)
+
 
 # Setup logging
 logger.remove()
@@ -36,6 +43,7 @@ mcp = FastMCP(
     dependencies=[
         "oci",
         "loguru",
+        "cryptography",
     ],
 )
 
@@ -80,6 +88,10 @@ def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
         raise
 
 
+#
+# Compartment tools
+#
+
 @mcp.tool(name="list_compartments")
 async def get_compartments(ctx: Context) -> List[Dict[str, Any]]:
     """
@@ -98,6 +110,10 @@ async def get_compartments(ctx: Context) -> List[Dict[str, Any]]:
         await ctx.error(error_msg)
         return [{"error": error_msg}]
 
+
+#
+# Instance tools
+#
 
 @mcp.tool(name="list_instances")
 async def get_instances(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
@@ -188,98 +204,166 @@ async def stop_instance_tool(ctx: Context, instance_id: str, force: bool = False
         return {"error": error_msg}
 
 
-@mcp.tool(name="create_instance")
-async def create_instance_tool(
-    ctx: Context,
-    compartment_id: str,
-    availability_domain: str,
-    subnet_id: str,
-    shape: str,
-    display_name: str,
-    image_id: str,
-    metadata: Dict[str, str] = None,
-    boot_volume_size_in_gbs: Optional[int] = None,
-    shape_config: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+
+
+
+
+
+
+#
+# Network tools
+#
+
+@mcp.tool(name="list_vcns")
+async def get_vcns(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
     """
-    Create a new compute instance.
+    List all Virtual Cloud Networks (VCNs) in a compartment.
     
     Args:
         compartment_id: OCID of the compartment
-        availability_domain: Availability domain name
-        subnet_id: OCID of the subnet
-        shape: Compute shape name
-        display_name: Display name for the instance
-        image_id: OCID of the image to use
-        metadata: Optional metadata to include with the instance
-        boot_volume_size_in_gbs: Optional boot volume size in GB
-        shape_config: Optional shape configuration (e.g., OCPUs, memory)
         
     Returns:
-        Details of the created instance
+        List of VCNs with their details
     """
     try:
-        await ctx.info(f"Creating instance {display_name} in compartment {compartment_id}...")
-        result = create_instance(
-            oci_clients["compute"],
-            oci_clients["network"],
-            compartment_id,
-            availability_domain,
-            subnet_id,
-            shape,
-            display_name,
-            image_id,
-            metadata,
-            boot_volume_size_in_gbs,
-            shape_config,
-        )
-        
-        if result.get("success", False):
-            await ctx.info(f"Instance creation initiated successfully. Current state: {result.get('lifecycle_state', 'PROVISIONING')}")
-        else:
-            await ctx.error(f"Instance creation failed: {result.get('message', 'Unknown error')}")
-            
+        await ctx.info(f"Listing VCNs in compartment {compartment_id}...")
+        result = list_vcns(oci_clients["network"], compartment_id)
+        await ctx.info(f"Found {len(result)} VCNs")
         return result
     except Exception as e:
-        error_msg = f"Error creating instance: {str(e)}"
+        error_msg = f"Error listing VCNs: {str(e)}"
         await ctx.error(error_msg)
-        return {"error": error_msg}
+        return [{"error": error_msg}]
 
 
-@mcp.tool(name="terminate_instance")
-async def terminate_instance_tool(
-    ctx: Context,
-    instance_id: str,
-    preserve_boot_volume: bool = False,
-) -> Dict[str, Any]:
+@mcp.tool(name="get_vcn")
+async def get_vcn_details(ctx: Context, vcn_id: str) -> Dict[str, Any]:
     """
-    Terminate (delete) a compute instance.
+    Get details of a specific VCN.
     
     Args:
-        instance_id: OCID of the instance to terminate
-        preserve_boot_volume: If True, the boot volume will be preserved after the instance is terminated
+        vcn_id: OCID of the VCN
         
     Returns:
-        Result of the operation
+        Details of the VCN
     """
     try:
-        await ctx.info(f"Terminating instance {instance_id}...")
-        result = terminate_instance(
-            oci_clients["compute"],
-            instance_id,
-            preserve_boot_volume,
-        )
-        
-        if result.get("success", False):
-            await ctx.info(f"Instance termination operation completed with status: {result.get('current_state', 'UNKNOWN')}")
-        else:
-            await ctx.error(f"Instance termination failed: {result.get('message', 'Unknown error')}")
-            
+        await ctx.info(f"Getting details for VCN {vcn_id}...")
+        result = get_vcn(oci_clients["network"], vcn_id)
+        await ctx.info(f"Retrieved VCN details successfully")
         return result
     except Exception as e:
-        error_msg = f"Error terminating instance: {str(e)}"
+        error_msg = f"Error getting VCN details: {str(e)}"
         await ctx.error(error_msg)
         return {"error": error_msg}
+
+
+@mcp.tool(name="list_subnets")
+async def get_subnets(ctx: Context, compartment_id: str, vcn_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    List all subnets in a compartment, optionally filtered by VCN.
+    
+    Args:
+        compartment_id: OCID of the compartment
+        vcn_id: Optional OCID of the VCN to filter by
+        
+    Returns:
+        List of subnets with their details
+    """
+    try:
+        if vcn_id:
+            await ctx.info(f"Listing subnets in compartment {compartment_id} and VCN {vcn_id}...")
+        else:
+            await ctx.info(f"Listing all subnets in compartment {compartment_id} across all VCNs...")
+            
+        result = list_subnets(oci_clients["network"], compartment_id, vcn_id)
+        await ctx.info(f"Found {len(result)} subnets")
+        return result
+    except Exception as e:
+        error_msg = f"Error listing subnets: {str(e)}"
+        await ctx.error(error_msg)
+        return [{"error": error_msg}]
+
+
+@mcp.tool(name="get_subnet")
+async def get_subnet_details(ctx: Context, subnet_id: str) -> Dict[str, Any]:
+    """
+    Get details of a specific subnet.
+    
+    Args:
+        subnet_id: OCID of the subnet
+        
+    Returns:
+        Details of the subnet
+    """
+    try:
+        await ctx.info(f"Getting details for subnet {subnet_id}...")
+        result = get_subnet(oci_clients["network"], subnet_id)
+        await ctx.info(f"Retrieved subnet details successfully")
+        return result
+    except Exception as e:
+        error_msg = f"Error getting subnet details: {str(e)}"
+        await ctx.error(error_msg)
+        return {"error": error_msg}
+
+
+@mcp.tool(name="list_vnics")
+async def get_vnics(ctx: Context, compartment_id: str, instance_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    List all VNICs in a compartment, optionally filtered by instance.
+    
+    Args:
+        compartment_id: OCID of the compartment
+        instance_id: Optional OCID of the instance to filter by
+        
+    Returns:
+        List of VNICs with their details
+    """
+    try:
+        if instance_id:
+            await ctx.info(f"Listing VNICs for instance {instance_id} in compartment {compartment_id}...")
+        else:
+            await ctx.info(f"Listing all VNICs in compartment {compartment_id}...")
+            
+        result = list_vnics(oci_clients["compute"], oci_clients["network"], compartment_id, instance_id)
+        await ctx.info(f"Found {len(result)} VNICs")
+        return result
+    except Exception as e:
+        error_msg = f"Error listing VNICs: {str(e)}"
+        await ctx.error(error_msg)
+        return [{"error": error_msg}]
+
+
+@mcp.tool(name="get_vnic")
+async def get_vnic_details(ctx: Context, vnic_id: str) -> Dict[str, Any]:
+    """
+    Get details of a specific VNIC.
+    
+    Args:
+        vnic_id: OCID of the VNIC
+        
+    Returns:
+        Details of the VNIC
+    """
+    try:
+        await ctx.info(f"Getting details for VNIC {vnic_id}...")
+        result = get_vnic(oci_clients["network"], vnic_id)
+        await ctx.info(f"Retrieved VNIC details successfully")
+        return result
+    except Exception as e:
+        error_msg = f"Error getting VNIC details: {str(e)}"
+        await ctx.error(error_msg)
+        return {"error": error_msg}
+
+
+#
+# Utility tools
+#
+
+
+
+
+
 
 
 def main() -> None:

@@ -4,6 +4,7 @@ Tools for managing OCI compute instances.
 
 import logging
 import time
+import json
 from typing import Dict, List, Any, Optional
 
 import oci
@@ -252,6 +253,22 @@ def create_instance(
     metadata: Dict[str, str] = None,
     boot_volume_size_in_gbs: Optional[int] = None,
     shape_config: Optional[Dict[str, Any]] = None,
+    create_vnic_details: Optional[Dict[str, Any]] = None,
+    fault_domain: Optional[str] = None,
+    assign_public_ip: Optional[bool] = True,
+    defined_tags: Optional[Dict[str, Any]] = None,
+    freeform_tags: Optional[Dict[str, Any]] = None,
+    extended_metadata: Optional[Dict[str, Any]] = None,
+    capacity_reservation_id: Optional[str] = None,
+    dedicated_vm_host_id: Optional[str] = None,
+    hostname_label: Optional[str] = None,
+    ipxe_script: Optional[str] = None,
+    launch_options: Optional[Dict[str, Any]] = None,
+    instance_options: Optional[Dict[str, Any]] = None,
+    availability_config: Optional[Dict[str, Any]] = None,
+    agent_config: Optional[Dict[str, Any]] = None,
+    is_pv_encryption_in_transit_enabled: Optional[bool] = None,
+    platform_config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Create a new compute instance.
@@ -267,43 +284,195 @@ def create_instance(
         image_id: OCID of the image to use
         metadata: Optional metadata to include with the instance
         boot_volume_size_in_gbs: Optional boot volume size in GB
-        shape_config: Optional shape configuration (e.g., OCPUs, memory)
+        shape_config: Optional shape configuration (OCPUs, memory)
+        create_vnic_details: Optional VNIC configuration
+        fault_domain: Optional fault domain
+        assign_public_ip: Whether to assign a public IP (defaults to True)
+        defined_tags: Optional defined tags
+        freeform_tags: Optional freeform tags
+        extended_metadata: Optional extended metadata
+        capacity_reservation_id: Optional capacity reservation ID
+        dedicated_vm_host_id: Optional dedicated VM host ID
+        hostname_label: Optional hostname label
+        ipxe_script: Optional iPXE script
+        launch_options: Optional launch options
+        instance_options: Optional instance options
+        availability_config: Optional availability configuration
+        agent_config: Optional agent configuration
+        is_pv_encryption_in_transit_enabled: Optional PV encryption in transit
+        platform_config: Optional platform configuration
         
     Returns:
         Details of the created instance
     """
     try:
-        # Create instance details
-        create_instance_details = oci.core.models.LaunchInstanceDetails(
+        # Default values
+        if metadata is None:
+            metadata = {}
+            
+        # Create the VNIC details
+        vnic_details = oci.core.models.CreateVnicDetails(
+            subnet_id=subnet_id,
+            assign_public_ip=assign_public_ip
+        )
+        
+        # Add additional VNIC configs if provided
+        if create_vnic_details:
+            if 'display_name' in create_vnic_details:
+                vnic_details.display_name = create_vnic_details['display_name']
+            if 'hostname_label' in create_vnic_details:
+                vnic_details.hostname_label = create_vnic_details['hostname_label']
+            if 'private_ip' in create_vnic_details:
+                vnic_details.private_ip = create_vnic_details['private_ip']
+            if 'nsg_ids' in create_vnic_details:
+                vnic_details.nsg_ids = create_vnic_details['nsg_ids']
+            if 'skip_source_dest_check' in create_vnic_details:
+                vnic_details.skip_source_dest_check = create_vnic_details['skip_source_dest_check']
+        
+        # Create the source details
+        source_details = oci.core.models.InstanceSourceViaImageDetails(
+            image_id=image_id
+        )
+        
+        # Add boot volume size if provided
+        if boot_volume_size_in_gbs:
+            source_details.boot_volume_size_in_gbs = boot_volume_size_in_gbs
+            
+        # Create the instance details
+        instance_details = oci.core.models.LaunchInstanceDetails(
             compartment_id=compartment_id,
             availability_domain=availability_domain,
             display_name=display_name,
             shape=shape,
-            metadata=metadata or {},
-            source_details=oci.core.models.InstanceSourceViaImageDetails(
-                source_type="image",
-                image_id=image_id,
-                boot_volume_size_in_gbs=boot_volume_size_in_gbs,
-            ),
-            create_vnic_details=oci.core.models.CreateVnicDetails(
-                subnet_id=subnet_id,
-                assign_public_ip=True,
-            ),
+            source_details=source_details,
+            create_vnic_details=vnic_details,
+            metadata=metadata,
         )
         
-        # Add shape config if provided
+        # Add optional configs if provided
         if shape_config:
             shape_config_obj = oci.core.models.LaunchInstanceShapeConfigDetails()
-            if "ocpus" in shape_config:
-                shape_config_obj.ocpus = float(shape_config["ocpus"])
-            if "memory_in_gbs" in shape_config:
-                shape_config_obj.memory_in_gbs = float(shape_config["memory_in_gbs"])
-            create_instance_details.shape_config = shape_config_obj
+            if 'ocpus' in shape_config:
+                shape_config_obj.ocpus = float(shape_config['ocpus'])
+            if 'memory_in_gbs' in shape_config:
+                shape_config_obj.memory_in_gbs = float(shape_config['memory_in_gbs'])
+            if 'baseline_ocpu_utilization' in shape_config:
+                shape_config_obj.baseline_ocpu_utilization = shape_config['baseline_ocpu_utilization']
+            instance_details.shape_config = shape_config_obj
+            
+        if fault_domain:
+            instance_details.fault_domain = fault_domain
+            
+        if defined_tags:
+            instance_details.defined_tags = defined_tags
+            
+        if freeform_tags:
+            instance_details.freeform_tags = freeform_tags
+            
+        if extended_metadata:
+            instance_details.extended_metadata = extended_metadata
+            
+        if capacity_reservation_id:
+            instance_details.capacity_reservation_id = capacity_reservation_id
+            
+        if dedicated_vm_host_id:
+            instance_details.dedicated_vm_host_id = dedicated_vm_host_id
+            
+        if hostname_label:
+            instance_details.hostname_label = hostname_label
+            
+        if ipxe_script:
+            instance_details.ipxe_script = ipxe_script
+            
+        if launch_options:
+            launch_options_obj = oci.core.models.LaunchOptions()
+            if 'boot_volume_type' in launch_options:
+                launch_options_obj.boot_volume_type = launch_options['boot_volume_type']
+            if 'firmware' in launch_options:
+                launch_options_obj.firmware = launch_options['firmware']
+            if 'network_type' in launch_options:
+                launch_options_obj.network_type = launch_options['network_type']
+            if 'remote_data_volume_type' in launch_options:
+                launch_options_obj.remote_data_volume_type = launch_options['remote_data_volume_type']
+            if 'is_pv_encryption_in_transit_enabled' in launch_options:
+                launch_options_obj.is_pv_encryption_in_transit_enabled = launch_options['is_pv_encryption_in_transit_enabled']
+            if 'is_consistent_volume_naming_enabled' in launch_options:
+                launch_options_obj.is_consistent_volume_naming_enabled = launch_options['is_consistent_volume_naming_enabled']
+            instance_details.launch_options = launch_options_obj
+            
+        if instance_options:
+            instance_options_obj = oci.core.models.InstanceOptions()
+            if 'are_legacy_imds_endpoints_disabled' in instance_options:
+                instance_options_obj.are_legacy_imds_endpoints_disabled = instance_options['are_legacy_imds_endpoints_disabled']
+            instance_details.instance_options = instance_options_obj
+            
+        if availability_config:
+            availability_config_obj = oci.core.models.LaunchInstanceAvailabilityConfigDetails()
+            if 'is_live_migration_preferred' in availability_config:
+                availability_config_obj.is_live_migration_preferred = availability_config['is_live_migration_preferred']
+            if 'recovery_action' in availability_config:
+                availability_config_obj.recovery_action = availability_config['recovery_action']
+            instance_details.availability_config = availability_config_obj
+            
+        if agent_config:
+            agent_config_obj = oci.core.models.LaunchInstanceAgentConfigDetails()
+            if 'is_monitoring_disabled' in agent_config:
+                agent_config_obj.is_monitoring_disabled = agent_config['is_monitoring_disabled']
+            if 'is_management_disabled' in agent_config:
+                agent_config_obj.is_management_disabled = agent_config['is_management_disabled']
+            if 'are_all_plugins_disabled' in agent_config:
+                agent_config_obj.are_all_plugins_disabled = agent_config['are_all_plugins_disabled']
+            if 'plugins_config' in agent_config:
+                agent_config_obj.plugins_config = [
+                    oci.core.models.InstanceAgentPluginConfigDetails(
+                        name=plugin['name'],
+                        desired_state=plugin['desired_state']
+                    )
+                    for plugin in agent_config['plugins_config']
+                ]
+            instance_details.agent_config = agent_config_obj
+            
+        if is_pv_encryption_in_transit_enabled is not None:
+            instance_details.is_pv_encryption_in_transit_enabled = is_pv_encryption_in_transit_enabled
+            
+        if platform_config:
+            # OCI has different platform config classes based on the type
+            platform_type = platform_config.get('type')
+            if platform_type == 'AMD_ROME_BM_GPU':
+                platform_config_obj = oci.core.models.AmdRomeBmGpuLaunchInstancePlatformConfig(
+                    type=platform_type
+                )
+            elif platform_type == 'AMD_VM':
+                platform_config_obj = oci.core.models.AmdVmLaunchInstancePlatformConfig(
+                    type=platform_type
+                )
+            elif platform_type == 'INTEL_VM':
+                platform_config_obj = oci.core.models.IntelVmLaunchInstancePlatformConfig(
+                    type=platform_type
+                )
+            elif platform_type == 'AMD_MILAN_BM':
+                platform_config_obj = oci.core.models.AmdMilanBmLaunchInstancePlatformConfig(
+                    type=platform_type
+                )
+            else:
+                logger.warning(f"Unknown platform type: {platform_type}")
+                platform_config_obj = None
+                
+            if platform_config_obj:
+                # Add common properties
+                for key in platform_config:
+                    if key != 'type' and hasattr(platform_config_obj, key):
+                        setattr(platform_config_obj, key, platform_config[key])
+                        
+                instance_details.platform_config = platform_config_obj
+        
+        # Log the instance details
+        logger.info(f"Creating instance {display_name} in compartment {compartment_id}")
         
         # Launch the instance
-        logger.info(f"Creating instance {display_name} in compartment {compartment_id}")
-        launch_instance_response = compute_client.launch_instance(create_instance_details)
+        launch_instance_response = compute_client.launch_instance(instance_details)
         instance_id = launch_instance_response.data.id
+        logger.info(f"Instance creation initiated with ID: {instance_id}")
         
         # Wait for the instance to become available (max 60 seconds for response)
         max_wait_time = 60
@@ -315,28 +484,45 @@ def create_instance(
             total_waited += wait_interval
             
             try:
+                # Get instance details
                 instance = compute_client.get_instance(instance_id).data
+                logger.info(f"Instance state: {instance.lifecycle_state}")
+                
+                # If instance is no longer provisioning, get network details
                 if instance.lifecycle_state not in ["PROVISIONING", "CREATING"]:
-                    # Instance is no longer in a provisioning state
+                    public_ip = None
+                    private_ip = None
                     
-                    # Get VNIC attachment to retrieve public IP
+                    # Get VNIC attachments to find IP addresses
                     vnic_attachments = oci.pagination.list_call_get_all_results(
                         compute_client.list_vnic_attachments,
                         compartment_id,
                         instance_id=instance_id
                     ).data
                     
-                    public_ip = None
-                    private_ip = None
-                    
+                    # Get IP addresses if VNIC attachments exist
                     if vnic_attachments:
-                        vnic_id = vnic_attachments[0].vnic_id
-                        vnic = network_client.get_vnic(vnic_id).data
-                        public_ip = vnic.public_ip
-                        private_ip = vnic.private_ip
+                        # There might be a delay until VNIC attachment is fully created
+                        time.sleep(5)
+                        
+                        for vnic_attachment in vnic_attachments:
+                            if vnic_attachment.lifecycle_state == "ATTACHED":
+                                try:
+                                    vnic = network_client.get_vnic(vnic_attachment.vnic_id).data
+                                    if hasattr(vnic, 'public_ip') and vnic.public_ip:
+                                        public_ip = vnic.public_ip
+                                    if hasattr(vnic, 'private_ip') and vnic.private_ip:
+                                        private_ip = vnic.private_ip
+                                    
+                                    # Break once we find valid IPs
+                                    if public_ip or private_ip:
+                                        break
+                                except Exception as vnic_error:
+                                    logger.warning(f"Error getting VNIC details: {vnic_error}")
                     
+                    # Return instance details
                     return {
-                        "success": instance.lifecycle_state == "RUNNING",
+                        "success": True,
                         "message": f"Instance {display_name} created with ID: {instance_id}",
                         "instance_id": instance_id,
                         "name": instance.display_name,
@@ -344,12 +530,14 @@ def create_instance(
                         "compartment_id": instance.compartment_id,
                         "availability_domain": instance.availability_domain,
                         "shape": instance.shape,
+                        "fault_domain": instance.fault_domain if hasattr(instance, 'fault_domain') else None,
                         "public_ip": public_ip,
                         "private_ip": private_ip,
                     }
             except oci.exceptions.ServiceError as se:
                 if se.status == 404:
                     # Instance not found yet, keep waiting
+                    logger.info(f"Instance {instance_id} not found yet, waiting...")
                     continue
                 raise
         
@@ -363,7 +551,11 @@ def create_instance(
         
     except Exception as e:
         logger.exception(f"Error creating instance: {e}")
-        raise
+        return {
+            "success": False,
+            "message": f"Failed to create instance: {str(e)}",
+            "error": str(e)
+        }
 
 
 def terminate_instance(
