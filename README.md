@@ -1,20 +1,20 @@
-# MCP Server para Oracle Cloud Infrastructure (OCI)
+# MCP Server for Oracle Cloud Infrastructure (OCI)
 
-Este proyecto implementa un servidor Model Context Protocol (MCP) para Oracle Cloud Infrastructure, permitiendo a los LLMs como Claude interactuar directamente con recursos de OCI.
+This project implements a Model Context Protocol (MCP) server for Oracle Cloud Infrastructure, allowing LLMs like Claude to interact directly with OCI resources.
 
-## Características
+## Features
 
-- Conexión a Oracle Cloud utilizando la configuración estándar de OCI CLI
-- Herramientas para listar y gestionar instancias y compartments en OCI
-- Integración con el protocolo MCP para facilitar el acceso desde Claude Desktop
+- Connection to Oracle Cloud using standard OCI CLI configuration
+- Tools to list and manage instances and compartments in OCI
+- Integration with the MCP protocol to facilitate access from Claude Desktop
 
-## Requisitos previos
+## Prerequisites
 
-- Python 3.10 o superior
-- OCI CLI configurado (`oci setup config`)
-- Permisos adecuados en Oracle Cloud
+- Python 3.10 or higher
+- OCI CLI configured (`oci setup config`)
+- Appropriate permissions in Oracle Cloud
 
-## Instalación
+## Installation
 
 ```bash
 cd /Users/jocebal/Work/mcp/mcp-server-oci
@@ -23,29 +23,29 @@ pip install oci fastapi uvicorn click pydantic loguru
 pip install -e .
 ```
 
-## Uso
+## Usage
 
-Para iniciar el servidor MCP directamente:
+To start the MCP server directly:
 
 ```bash
 python -m mcp_server_oci.mcp_server --profile DEFAULT
 ```
 
-Con `uv`:
+With `uv`:
 
 ```bash
 uv --directory /Users/jocebal/Work/mcp/mcp-server-oci run python -m mcp_server_oci.mcp_server --profile DEFAULT
 ```
 
-También puedes especificar el perfil usando una variable de entorno:
+You can also specify the profile using an environment variable:
 
 ```bash
 OCI_CLI_PROFILE=PERFIL python -m mcp_server_oci.mcp_server
 ```
 
-## Configuración para Claude Desktop (MacOS)
+## Configuration for Claude Desktop (MacOS)
 
-Añade esta configuración a tu archivo:
+Add this configuration to your file: 
 `/Users/<usuario>/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
