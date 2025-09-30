@@ -134,3 +134,36 @@ Alternativamente, puedes usar `uv`:
 - `list_regions` - All OCI regions
 - `get_tenancy_info` - Your tenancy details and configuration
 
+## 💡 **Usage Examples**
+
+### **Basic Discovery**
+```bash
+# Run the server
+python -m mcp_server_oci
+
+# From Claude or any MCP client:
+# "List all compartments in my tenancy"
+# "Show me all compute instances in compartment ocid1.compartment.oc1..."
+# "What VCNs do I have and their CIDR blocks?"
+```
+
+### **Security Auditing**
+```bash
+# "List all users and their capabilities"
+# "Show me all policies in the root compartment"
+# "What are the security list rules for subnet X?"
+```
+
+### **Infrastructure Inventory**
+```bash
+# "List all databases and their configurations"
+# "Show me all storage volumes and their sizes"
+# "What load balancers do I have and their backend configurations?"
+```
+
+### **Advanced Queries**
+```bash
+# "Show me the complete network topology for compartment X"
+# "List all resources that are publicly accessible"
+# "Generate a report of all compute instances with their shapes and states"
+```
