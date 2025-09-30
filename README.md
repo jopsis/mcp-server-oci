@@ -16,8 +16,9 @@ This project implements a Model Context Protocol (MCP) server for Oracle Cloud I
 
 ## Installation
 
+Clone this repo
+
 ```bash
-cd /Users/jocebal/Work/mcp/mcp-server-oci
 pip install git+https://github.com/modelcontextprotocol/python-sdk.git
 pip install oci fastapi uvicorn click pydantic loguru
 pip install -e .
