@@ -43,10 +43,10 @@ También puedes especificar el perfil usando una variable de entorno:
 OCI_CLI_PROFILE=PERFIL python -m mcp_server_oci.mcp_server
 ```
 
-## Configuración para Claude Desktop
+## Configuración para Claude Desktop (MacOS)
 
 Añade esta configuración a tu archivo:
-`/Users/jocebal/Library/Application Support/Claude/claude_desktop_config.json`
+`/Users/<usuario>/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 "mcpServers": {
