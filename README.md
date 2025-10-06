@@ -59,14 +59,14 @@ Add this configuration to your file:
       "--profile", "DEFAULT"
     ],
     "env": {
-      "PYTHONPATH": "/Users/jocebal/Work/mcp/mcp-server-oci",
+      "PYTHONPATH": "/<PATH_TO_MCP>/mcp-server-oci",
       "FASTMCP_LOG_LEVEL": "INFO"
     }
   }
 }
 ```
 
-Alternativamente, puedes usar `uv`:
+With `uv`:
 
 ```json
 "mcpServers": {
@@ -74,7 +74,7 @@ Alternativamente, puedes usar `uv`:
     "command": "uv",
     "args": [
       "--directory",
-      "/Users/jocebal/Work/mcp/mcp-server-oci",
+      "/<PATH_TO_MCP>/mcp-server-oci",
       "run",
       "python",
       "-m",
