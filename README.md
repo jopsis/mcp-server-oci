@@ -2,7 +2,7 @@
 
 This project implements a Model Context Protocol (MCP) server for Oracle Cloud Infrastructure, allowing LLMs like Claude to interact directly with OCI resources.
 
-![presentation](/images/front.jpg)
+![presentation](/images/front.jpeg)
 
 ## Features
 
