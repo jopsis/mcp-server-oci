@@ -17,6 +17,11 @@ from mcp_server_oci.config import (
     DEFAULT_LOG_LEVEL,
     DEFAULT_OCI_PROFILE,
 )
+from mcp_server_oci.profile_manager import (
+    list_available_profiles,
+    validate_profile_exists,
+    get_profile_info,
+)
 
 # Import OCI tools
 from mcp_server_oci.tools.compartments import list_compartments
@@ -117,14 +122,15 @@ mcp = FastMCP(
     ],
 )
 
-# Store OCI clients
+# Store OCI clients and current profile
 oci_clients: Dict[str, Any] = {}
+current_profile: Optional[str] = None
 
 # Type variable for generic function returns
 T = TypeVar('T', bound=Union[Dict[str, Any], List[Dict[str, Any]]])
 
 
-def mcp_tool_wrapper(start_msg: str = None, success_msg: str = None, error_prefix: str = "Error"):
+def mcp_tool_wrapper(start_msg: str = None, success_msg: str = None, error_prefix: str = "Error", require_profile: bool = True):
     """
     Decorator to wrap MCP tool functions with common error handling and logging.
 
@@ -136,6 +142,7 @@ def mcp_tool_wrapper(start_msg: str = None, success_msg: str = None, error_prefi
         start_msg: Optional custom start message (supports {args} placeholders)
         success_msg: Optional custom success message (supports {result} placeholder)
         error_prefix: Prefix for error messages (default: "Error")
+        require_profile: Whether this tool requires an active OCI profile (default: True)
 
     Returns:
         Decorated async function with error handling and logging
@@ -143,6 +150,17 @@ def mcp_tool_wrapper(start_msg: str = None, success_msg: str = None, error_prefi
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(ctx: Context, *args, **kwargs) -> T:
+            # Check if profile is required and active
+            if require_profile and current_profile is None:
+                error_msg = "No OCI profile selected. Use 'list_oci_profiles' to see available profiles, then 'set_oci_profile' to activate one."
+                await ctx.error(error_msg)
+
+                # Return error dict for consistency - check function return type annotation
+                return_annotation = func.__annotations__.get('return', '')
+                if 'List' in str(return_annotation):
+                    return [{"error": error_msg, "requires_profile": True}]
+                return {"error": error_msg, "requires_profile": True}
+
             # Log start message
             if start_msg:
                 try:
@@ -237,6 +255,123 @@ def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
     except Exception as e:
         logger.exception(f"Error initializing OCI clients: {e}")
         raise
+
+
+# Profile Management Tools
+@mcp.tool(name="list_oci_profiles")
+async def list_profiles_tool(ctx: Context) -> List[Dict[str, str]]:
+    """
+    List all available OCI profiles from ~/.oci/config file.
+
+    Returns a list of profiles with their configuration details.
+    Use this when you need to select a profile before making OCI API calls.
+    """
+    try:
+        await ctx.info("Reading available OCI profiles from config file...")
+        profiles = list_available_profiles()
+
+        if not profiles:
+            await ctx.info("No profiles found in OCI config file")
+            return [{
+                "error": "No profiles found in OCI config file. Please configure OCI CLI first."
+            }]
+
+        await ctx.info(f"Found {len(profiles)} available profiles")
+        return profiles
+    except FileNotFoundError as e:
+        error_msg = str(e)
+        await ctx.error(error_msg)
+        return [{"error": error_msg}]
+    except Exception as e:
+        error_msg = f"Error listing profiles: {str(e)}"
+        await ctx.error(error_msg)
+        logger.exception("Error listing OCI profiles")
+        return [{"error": error_msg}]
+
+
+@mcp.tool(name="set_oci_profile")
+async def set_profile_tool(ctx: Context, profile_name: str) -> Dict[str, Any]:
+    """
+    Set the active OCI profile to use for API calls.
+
+    Args:
+        profile_name: Name of the profile to activate (e.g., "DEFAULT", "production")
+
+    This will initialize or reinitialize OCI clients with the selected profile.
+    """
+    global oci_clients, current_profile
+
+    try:
+        await ctx.info(f"Setting active profile to: {profile_name}")
+
+        # Validate profile exists
+        if not validate_profile_exists(profile_name):
+            error_msg = f"Profile '{profile_name}' not found in OCI config. Use list_oci_profiles to see available profiles."
+            await ctx.error(error_msg)
+            return {
+                "success": False,
+                "message": error_msg,
+                "current_profile": current_profile
+            }
+
+        # Get profile info
+        profile_info = get_profile_info(profile_name)
+
+        # Initialize OCI clients with the selected profile
+        await ctx.info(f"Initializing OCI clients with profile '{profile_name}'...")
+        oci_clients = init_oci_clients(profile_name)
+        current_profile = profile_name
+
+        await ctx.info(f"Successfully activated profile: {profile_name}")
+        return {
+            "success": True,
+            "message": f"Profile '{profile_name}' activated successfully",
+            "current_profile": current_profile,
+            "profile_details": profile_info
+        }
+
+    except Exception as e:
+        error_msg = f"Error setting profile: {str(e)}"
+        await ctx.error(error_msg)
+        logger.exception(f"Error setting profile to {profile_name}")
+        return {
+            "success": False,
+            "message": error_msg,
+            "current_profile": current_profile
+        }
+
+
+@mcp.tool(name="get_current_oci_profile")
+async def get_current_profile_tool(ctx: Context) -> Dict[str, Any]:
+    """
+    Get the currently active OCI profile.
+
+    Returns information about which profile is currently being used for API calls.
+    """
+    try:
+        if current_profile is None:
+            await ctx.info("No profile currently active")
+            return {
+                "active": False,
+                "message": "No profile selected. Use list_oci_profiles to see available profiles, then set_oci_profile to activate one."
+            }
+
+        profile_info = get_profile_info(current_profile)
+        await ctx.info(f"Current active profile: {current_profile}")
+
+        return {
+            "active": True,
+            "current_profile": current_profile,
+            "profile_details": profile_info
+        }
+
+    except Exception as e:
+        error_msg = f"Error getting current profile: {str(e)}"
+        await ctx.error(error_msg)
+        logger.exception("Error getting current profile")
+        return {
+            "error": error_msg
+        }
 
 
 # Compartment tools
@@ -424,12 +559,14 @@ async def mcp_stop_db_system(ctx: Context, db_system_id: str, compartment_id: st
 
 def main() -> None:
     """Run the MCP server for OCI."""
+    global oci_clients, current_profile
+
     parser = argparse.ArgumentParser(
         description="A Model Context Protocol (MCP) server for Oracle Cloud Infrastructure"
     )
 
-    parser.add_argument("--profile", default=os.environ.get("OCI_CLI_PROFILE", DEFAULT_OCI_PROFILE),
-                        help="OCI profile to use")
+    parser.add_argument("--profile", default=None,
+                        help="OCI profile to use (optional - can be set dynamically using set_oci_profile tool)")
     parser.add_argument("--sse", action="store_true", help="Use SSE transport")
     parser.add_argument("--port", type=int, default=DEFAULT_SSE_PORT, help="Port for SSE transport")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
@@ -440,12 +577,19 @@ def main() -> None:
         logger.remove()
         logger.add(sys.stderr, level="DEBUG")
 
-    # Initialize OCI clients
-    try:
-        init_oci_clients(args.profile)
-    except Exception as e:
-        logger.error(f"Failed to initialize OCI clients: {e}")
-        sys.exit(1)
+    # Initialize OCI clients if profile provided
+    if args.profile:
+        try:
+            logger.info(f"Initializing OCI clients with profile: {args.profile}")
+            oci_clients = init_oci_clients(args.profile)
+            current_profile = args.profile
+            logger.info(f"OCI clients initialized successfully with profile: {args.profile}")
+        except Exception as e:
+            logger.error(f"Failed to initialize OCI clients with profile '{args.profile}': {e}")
+            logger.info("Server will start without an active profile. Use 'set_oci_profile' tool to activate one.")
+    else:
+        logger.info("Starting OCI MCP Server without a default profile")
+        logger.info("Use 'list_oci_profiles' to see available profiles and 'set_oci_profile' to activate one")
 
     # Run server with appropriate transport
     logger.info("Starting OCI MCP Server")
