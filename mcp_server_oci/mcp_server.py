@@ -3,15 +3,12 @@ OCI MCP Server - A simplified MCP server for Oracle Cloud Infrastructure.
 """
 
 import argparse
-import asyncio
-import json
 import os
 import sys
 from typing import Dict, List, Any, Optional
 
 import oci
 from loguru import logger
-from fastapi import FastAPI  # kept if used elsewhere by FastMCP
 
 from mcp.server.fastmcp import FastMCP, Context
 

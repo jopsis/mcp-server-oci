@@ -4,7 +4,6 @@ Tools for managing OCI compute instances.
 
 import logging
 import time
-import json
 from typing import Dict, List, Any, Optional
 
 import oci
@@ -146,26 +145,8 @@ def start_instance(compute_client: oci.core.ComputeClient, instance_id: str) -> 
         
         # Start the instance
         compute_client.instance_action(instance_id, "START")
-        
-        # Wait for the instance to start (max 30 seconds for response)
-        
-       # max_wait_time = 30
-       # wait_interval = 5
-       # total_waited = 0
-      #  
-       # while total_waited < max_wait_time:
-       #     time.sleep(wait_interval)
-       #     total_waited += wait_interval
-       #     
-       #     current_state = compute_client.get_instance(instance_id).data.lifecycle_state
-       #     if current_state == "RUNNING":
-       #         return {
-       #             "success": True,
-       #             "message": f"Successfully started instance {instance.display_name} ({instance_id})",
-       #             "current_state": current_state,
-       #         }
-        
-        # If we get here, the instance is still starting
+
+        # Return immediately - instance is starting
         return {
             "success": True,
             "message": f"Instance {instance.display_name} ({instance_id}) is starting. Check status later.",
