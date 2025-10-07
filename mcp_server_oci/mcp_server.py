@@ -123,6 +123,10 @@ def mcp_tool_wrapper(start_msg: str = None, success_msg: str = None, error_prefi
     """
     Decorator to wrap MCP tool functions with common error handling and logging.
 
+    Implements Hybrid Error Handling Pattern (Option A):
+    - Technical errors (network, permissions, etc.) → raise Exception → converted to {"error": ...}
+    - Business states (already running, invalid state) → return {"success": bool, ...} → passed through
+
     Args:
         start_msg: Optional custom start message (supports {args} placeholders)
         success_msg: Optional custom success message (supports {result} placeholder)
@@ -146,7 +150,19 @@ def mcp_tool_wrapper(start_msg: str = None, success_msg: str = None, error_prefi
                 # Call the decorated function (which calls the underlying OCI function)
                 result = await func(ctx, *args, **kwargs)
 
-                # Log success message
+                # Check if result is a business state response
+                if isinstance(result, dict) and "success" in result:
+                    # Business state response - log based on success field
+                    if result.get("success"):
+                        msg = result.get("message", "Operation completed successfully")
+                        await ctx.info(msg)
+                    else:
+                        # Business failure (not technical error)
+                        msg = result.get("message", "Operation could not be completed")
+                        await ctx.info(f"Business state: {msg}")
+                    return result
+
+                # Normal data response - log success message if provided
                 if success_msg:
                     try:
                         msg = success_msg.format(result=result, **kwargs)
@@ -157,6 +173,7 @@ def mcp_tool_wrapper(start_msg: str = None, success_msg: str = None, error_prefi
                 return result
 
             except Exception as e:
+                # Technical error - convert to error dict
                 error_msg = f"{error_prefix}: {str(e)}"
                 await ctx.error(error_msg)
                 logger.exception(f"{error_prefix} in {func.__name__}")
