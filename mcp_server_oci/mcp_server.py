@@ -143,8 +143,8 @@ def mcp_tool_wrapper(start_msg: str = None, success_msg: str = None, error_prefi
                     await ctx.info(start_msg)
 
             try:
-                # Call the underlying OCI function
-                result = func(*args, **kwargs)
+                # Call the decorated function (which calls the underlying OCI function)
+                result = await func(ctx, *args, **kwargs)
 
                 # Log success message
                 if success_msg:
@@ -161,10 +161,10 @@ def mcp_tool_wrapper(start_msg: str = None, success_msg: str = None, error_prefi
                 await ctx.error(error_msg)
                 logger.exception(f"{error_prefix} in {func.__name__}")
 
-                # Return error dict for consistency
-                if isinstance(result := func.__annotations__.get('return'), type):
-                    if 'List' in str(result):
-                        return [{"error": error_msg}]
+                # Return error dict for consistency - check function return type annotation
+                return_annotation = func.__annotations__.get('return', '')
+                if 'List' in str(return_annotation):
+                    return [{"error": error_msg}]
                 return {"error": error_msg}
 
         return wrapper
