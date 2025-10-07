@@ -3,7 +3,6 @@ Tools for managing OCI Database Systems (DB Systems) and their DB Nodes.
 """
 
 import logging
-import time
 from typing import Dict, List, Any, Optional
 
 import oci
@@ -150,24 +149,14 @@ def start_db_node(database_client: oci.database.DatabaseClient, db_node_id: str)
     """Start a DB Node."""
     try:
         database_client.db_node_action(db_node_id, "START")
-        max_wait_time = 60
-        wait_interval = 5
-        waited = 0
-        while waited < max_wait_time:
-            time.sleep(wait_interval)
-            waited += wait_interval
-            node = database_client.get_db_node(db_node_id).data
-            if node.lifecycle_state in ["AVAILABLE", "PROVISIONING", "UPDATING"]:
-                return {
-                    "success": True,
-                    "message": f"DB Node {db_node_id} start requested successfully",
-                    "current_state": node.lifecycle_state,
-                }
-        node = database_client.get_db_node(db_node_id).data
+        logger.info(f"Initiated START action for DB Node {db_node_id}")
+
+        # Return immediately - operation is asynchronous
         return {
             "success": True,
-            "message": f"DB Node {db_node_id} start in progress",
-            "current_state": node.lifecycle_state,
+            "message": f"DB Node start operation initiated. Use get_db_node to monitor progress.",
+            "current_state": "STARTING",
+            "db_node_id": db_node_id
         }
     except Exception as e:
         logger.exception(f"Error starting DB Node: {e}")
@@ -179,24 +168,15 @@ def stop_db_node(database_client: oci.database.DatabaseClient, db_node_id: str, 
     try:
         action = "STOP"
         database_client.db_node_action(db_node_id, action)
-        max_wait_time = 60
-        wait_interval = 5
-        waited = 0
-        while waited < max_wait_time:
-            time.sleep(wait_interval)
-            waited += wait_interval
-            node = database_client.get_db_node(db_node_id).data
-            if node.lifecycle_state in ["STOPPED", "STOPPING"]:
-                return {
-                    "success": True,
-                    "message": f"DB Node {db_node_id} stop requested successfully",
-                    "current_state": node.lifecycle_state,
-                }
-        node = database_client.get_db_node(db_node_id).data
+        logger.info(f"Initiated STOP action for DB Node {db_node_id}")
+
+        # Return immediately - operation is asynchronous
         return {
             "success": True,
-            "message": f"DB Node {db_node_id} stop in progress",
-            "current_state": node.lifecycle_state,
+            "message": f"DB Node stop operation initiated. Use get_db_node to monitor progress.",
+            "current_state": "STOPPING",
+            "db_node_id": db_node_id,
+            "soft_stop": soft
         }
     except Exception as e:
         logger.exception(f"Error stopping DB Node: {e}")

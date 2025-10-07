@@ -3,7 +3,6 @@ Tools for managing OCI compute instances.
 """
 
 import logging
-import time
 from typing import Dict, List, Any, Optional
 
 import oci
@@ -191,31 +190,17 @@ def stop_instance(compute_client: oci.core.ComputeClient, instance_id: str, forc
         action = "SOFTSTOP"
         if force:
             action = "STOP"
-        
+
         compute_client.instance_action(instance_id, action)
-        
-        # Wait for the instance to stop (max 30 seconds for response)
-        max_wait_time = 30
-        wait_interval = 5
-        total_waited = 0
-        
-        while total_waited < max_wait_time:
-            time.sleep(wait_interval)
-            total_waited += wait_interval
-            
-            current_state = compute_client.get_instance(instance_id).data.lifecycle_state
-            if current_state == "STOPPED":
-                return {
-                    "success": True,
-                    "message": f"Successfully stopped instance {instance.display_name} ({instance_id})",
-                    "current_state": current_state,
-                }
-        
-        # If we get here, the instance is still stopping
+
+        # Return immediately - operation is asynchronous
+        logger.info(f"Initiated {action} for instance {instance_id}")
         return {
             "success": True,
-            "message": f"Instance {instance.display_name} ({instance_id}) is stopping. Check status later.",
-            "current_state": compute_client.get_instance(instance_id).data.lifecycle_state,
+            "message": f"Instance stop operation initiated. Check status with get_instance to monitor progress.",
+            "current_state": "STOPPING",
+            "instance_id": instance_id,
+            "stop_type": "soft" if action == "SOFTSTOP" else "force"
         }
         
     except Exception as e:
@@ -455,80 +440,16 @@ def create_instance(
         launch_instance_response = compute_client.launch_instance(instance_details)
         instance_id = launch_instance_response.data.id
         logger.info(f"Instance creation initiated with ID: {instance_id}")
-        
-        # Wait for the instance to become available (max 60 seconds for response)
-        max_wait_time = 60
-        wait_interval = 10
-        total_waited = 0
-        
-        while total_waited < max_wait_time:
-            time.sleep(wait_interval)
-            total_waited += wait_interval
-            
-            try:
-                # Get instance details
-                instance = compute_client.get_instance(instance_id).data
-                logger.info(f"Instance state: {instance.lifecycle_state}")
-                
-                # If instance is no longer provisioning, get network details
-                if instance.lifecycle_state not in ["PROVISIONING", "CREATING"]:
-                    public_ip = None
-                    private_ip = None
-                    
-                    # Get VNIC attachments to find IP addresses
-                    vnic_attachments = oci.pagination.list_call_get_all_results(
-                        compute_client.list_vnic_attachments,
-                        compartment_id,
-                        instance_id=instance_id
-                    ).data
-                    
-                    # Get IP addresses if VNIC attachments exist
-                    if vnic_attachments:
-                        # There might be a delay until VNIC attachment is fully created
-                        time.sleep(5)
-                        
-                        for vnic_attachment in vnic_attachments:
-                            if vnic_attachment.lifecycle_state == "ATTACHED":
-                                try:
-                                    vnic = network_client.get_vnic(vnic_attachment.vnic_id).data
-                                    if hasattr(vnic, 'public_ip') and vnic.public_ip:
-                                        public_ip = vnic.public_ip
-                                    if hasattr(vnic, 'private_ip') and vnic.private_ip:
-                                        private_ip = vnic.private_ip
-                                    
-                                    # Break once we find valid IPs
-                                    if public_ip or private_ip:
-                                        break
-                                except Exception as vnic_error:
-                                    logger.warning(f"Error getting VNIC details: {vnic_error}")
-                    
-                    # Return instance details
-                    return {
-                        "success": True,
-                        "message": f"Instance {display_name} created with ID: {instance_id}",
-                        "instance_id": instance_id,
-                        "name": instance.display_name,
-                        "lifecycle_state": instance.lifecycle_state,
-                        "compartment_id": instance.compartment_id,
-                        "availability_domain": instance.availability_domain,
-                        "shape": instance.shape,
-                        "fault_domain": instance.fault_domain if hasattr(instance, 'fault_domain') else None,
-                        "public_ip": public_ip,
-                        "private_ip": private_ip,
-                    }
-            except oci.exceptions.ServiceError as se:
-                if se.status == 404:
-                    # Instance not found yet, keep waiting
-                    logger.info(f"Instance {instance_id} not found yet, waiting...")
-                    continue
-                raise
-        
-        # If we get here, the instance is still provisioning
+
+        # Return immediately - instance creation is asynchronous
         return {
             "success": True,
-            "message": f"Instance {display_name} is being provisioned with ID: {instance_id}. Check status later.",
+            "message": f"Instance {display_name} creation initiated. Use get_instance to monitor provisioning progress.",
             "instance_id": instance_id,
             "lifecycle_state": "PROVISIONING",
+            "compartment_id": compartment_id,
+            "availability_domain": availability_domain,
+            "shape": shape,
         }
         
     except Exception as e:
@@ -564,39 +485,14 @@ def terminate_instance(
         # Terminate the instance
         logger.info(f"Terminating instance {instance_name} ({instance_id})")
         compute_client.terminate_instance(instance_id, preserve_boot_volume=preserve_boot_volume)
-        
-        # Wait for the instance to be terminated (max 30 seconds for response)
-        max_wait_time = 30
-        wait_interval = 5
-        total_waited = 0
-        
-        while total_waited < max_wait_time:
-            time.sleep(wait_interval)
-            total_waited += wait_interval
-            
-            try:
-                current_instance = compute_client.get_instance(instance_id).data
-                if current_instance.lifecycle_state == "TERMINATED":
-                    return {
-                        "success": True,
-                        "message": f"Successfully terminated instance {instance_name} ({instance_id})",
-                        "current_state": current_instance.lifecycle_state,
-                    }
-            except oci.exceptions.ServiceError as se:
-                if se.status == 404:
-                    # Instance not found, means it's been fully terminated
-                    return {
-                        "success": True,
-                        "message": f"Successfully terminated instance {instance_name} ({instance_id})",
-                        "current_state": "TERMINATED",
-                    }
-                raise
-        
-        # If we get here, the instance is still terminating
+
+        # Return immediately - termination is asynchronous
         return {
             "success": True,
-            "message": f"Instance {instance_name} ({instance_id}) is being terminated. Check status later.",
+            "message": f"Instance {instance_name} termination initiated. Use get_instance to monitor (will return 404 when fully terminated).",
             "current_state": "TERMINATING",
+            "instance_id": instance_id,
+            "preserve_boot_volume": preserve_boot_volume
         }
         
     except oci.exceptions.ServiceError as se:
