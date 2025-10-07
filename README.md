@@ -230,7 +230,15 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.4 - Centralized Configuration (Latest)
+### v1.5 - Dynamic Profile Selection (Latest) 🔥
+- **Multi-tenancy support**: Switch between OCI profiles without restarting
+- New MCP tools: `list_oci_profiles`, `set_oci_profile`, `get_current_oci_profile`
+- Profile requirement validation in all OCI tools
+- Optional `--profile` argument (lazy initialization)
+- Complete documentation in `DYNAMIC_PROFILE_SELECTION.md`
+- Updated README with accurate tool listing
+
+### v1.4 - Centralized Configuration
 - Created centralized `config.py` with all configuration constants
 - Eliminated magic numbers throughout the codebase
 - Improved maintainability and discoverability of configuration values
