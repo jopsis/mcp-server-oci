@@ -11,10 +11,17 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 
+from mcp_server_oci.config import (
+    DEFAULT_SSH_KEY_SIZE,
+    RSA_PUBLIC_EXPONENT,
+    DEFAULT_SSH_KEY_COMMENT,
+    PRIVATE_KEY_PERMISSIONS,
+)
+
 logger = logging.getLogger(__name__)
 
 
-def generate_ssh_key_pair(key_size: int = 2048, comment: str = "oci-mcp-server-key") -> Tuple[str, str]:
+def generate_ssh_key_pair(key_size: int = DEFAULT_SSH_KEY_SIZE, comment: str = DEFAULT_SSH_KEY_COMMENT) -> Tuple[str, str]:
     """
     Generate a new SSH key pair.
     
@@ -28,7 +35,7 @@ def generate_ssh_key_pair(key_size: int = 2048, comment: str = "oci-mcp-server-k
     try:
         # Generate private key
         private_key = rsa.generate_private_key(
-            public_exponent=65537,
+            public_exponent=RSA_PUBLIC_EXPONENT,
             key_size=key_size,
             backend=default_backend()
         )
@@ -86,7 +93,7 @@ def save_ssh_key_pair(private_key: str, public_key: str,
             f.write(private_key)
             
         # Set appropriate permissions for private key
-        os.chmod(private_key_path, 0o600)
+        os.chmod(private_key_path, PRIVATE_KEY_PERMISSIONS)
         
         with open(public_key_path, 'w') as f:
             f.write(public_key)

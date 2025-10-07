@@ -12,6 +12,11 @@ import oci
 from loguru import logger
 
 from mcp.server.fastmcp import FastMCP, Context
+from mcp_server_oci.config import (
+    DEFAULT_SSE_PORT,
+    DEFAULT_LOG_LEVEL,
+    DEFAULT_OCI_PROFILE,
+)
 
 # Import OCI tools
 from mcp_server_oci.tools.compartments import list_compartments
@@ -99,7 +104,7 @@ from mcp_server_oci.tools.dbsystems import (
 
 # Setup logging
 logger.remove()
-log_level = os.environ.get("FASTMCP_LOG_LEVEL", "INFO")
+log_level = os.environ.get("FASTMCP_LOG_LEVEL", DEFAULT_LOG_LEVEL)
 logger.add(sys.stderr, level=log_level)
 
 # Create the MCP server
@@ -423,10 +428,10 @@ def main() -> None:
         description="A Model Context Protocol (MCP) server for Oracle Cloud Infrastructure"
     )
 
-    parser.add_argument("--profile", default=os.environ.get("OCI_CLI_PROFILE", "DEFAULT"),
+    parser.add_argument("--profile", default=os.environ.get("OCI_CLI_PROFILE", DEFAULT_OCI_PROFILE),
                         help="OCI profile to use")
     parser.add_argument("--sse", action="store_true", help="Use SSE transport")
-    parser.add_argument("--port", type=int, default=45678, help="Port for SSE transport")
+    parser.add_argument("--port", type=int, default=DEFAULT_SSE_PORT, help="Port for SSE transport")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     args = parser.parse_args()
 
