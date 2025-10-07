@@ -5,7 +5,9 @@
       "Bash(git checkout:*)",
       "Bash(rm:*)",
       "Bash(python:*)",
-      "Bash(source:*)"
+      "Bash(source:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
