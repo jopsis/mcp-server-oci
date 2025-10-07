@@ -5,7 +5,8 @@ OCI MCP Server - A simplified MCP server for Oracle Cloud Infrastructure.
 import argparse
 import os
 import sys
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Callable, TypeVar, Union
+from functools import wraps
 
 import oci
 from loguru import logger
@@ -114,6 +115,61 @@ mcp = FastMCP(
 # Store OCI clients
 oci_clients: Dict[str, Any] = {}
 
+# Type variable for generic function returns
+T = TypeVar('T', bound=Union[Dict[str, Any], List[Dict[str, Any]]])
+
+
+def mcp_tool_wrapper(start_msg: str = None, success_msg: str = None, error_prefix: str = "Error"):
+    """
+    Decorator to wrap MCP tool functions with common error handling and logging.
+
+    Args:
+        start_msg: Optional custom start message (supports {args} placeholders)
+        success_msg: Optional custom success message (supports {result} placeholder)
+        error_prefix: Prefix for error messages (default: "Error")
+
+    Returns:
+        Decorated async function with error handling and logging
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(ctx: Context, *args, **kwargs) -> T:
+            # Log start message
+            if start_msg:
+                try:
+                    msg = start_msg.format(**kwargs) if kwargs else start_msg
+                    await ctx.info(msg)
+                except (KeyError, IndexError):
+                    await ctx.info(start_msg)
+
+            try:
+                # Call the underlying OCI function
+                result = func(*args, **kwargs)
+
+                # Log success message
+                if success_msg:
+                    try:
+                        msg = success_msg.format(result=result, **kwargs)
+                        await ctx.info(msg)
+                    except (KeyError, AttributeError):
+                        await ctx.info(success_msg)
+
+                return result
+
+            except Exception as e:
+                error_msg = f"{error_prefix}: {str(e)}"
+                await ctx.error(error_msg)
+                logger.exception(f"{error_prefix} in {func.__name__}")
+
+                # Return error dict for consistency
+                if isinstance(result := func.__annotations__.get('return'), type):
+                    if 'List' in str(result):
+                        return [{"error": error_msg}]
+                return {"error": error_msg}
+
+        return wrapper
+    return decorator
+
 
 def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
     """
@@ -163,75 +219,56 @@ def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
 
 # Compartment tools
 @mcp.tool(name="list_compartments")
+@mcp_tool_wrapper(
+    start_msg="Listing compartments...",
+    success_msg="Found {result} compartments" if isinstance(list_compartments, list) else None,
+    error_prefix="Error listing compartments"
+)
 async def get_compartments(ctx: Context) -> List[Dict[str, Any]]:
     """List all compartments accessible to the user."""
-    try:
-        await ctx.info("Listing compartments...")
-        result = list_compartments(oci_clients["identity"])
-        await ctx.info(f"Found {len(result)} compartments")
-        return result
-    except Exception as e:
-        error_msg = f"Error listing compartments: {str(e)}"
-        await ctx.error(error_msg)
-        return [{"error": error_msg}]
+    return list_compartments(oci_clients["identity"])
 
 
 # Instance tools
 @mcp.tool(name="list_instances")
+@mcp_tool_wrapper(
+    start_msg="Listing instances in compartment {compartment_id}...",
+    error_prefix="Error listing instances"
+)
 async def get_instances(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
     """List all instances in a compartment."""
-    try:
-        await ctx.info(f"Listing instances in compartment {compartment_id}...")
-        result = list_instances(oci_clients["compute"], compartment_id)
-        await ctx.info(f"Found {len(result)} instances")
-        return result
-    except Exception as e:
-        error_msg = f"Error listing instances: {str(e)}"
-        await ctx.error(error_msg)
-        return [{"error": error_msg}]
+    return list_instances(oci_clients["compute"], compartment_id)
 
 
 @mcp.tool(name="get_instance")
+@mcp_tool_wrapper(
+    start_msg="Getting details for instance {instance_id}...",
+    success_msg="Retrieved instance details successfully",
+    error_prefix="Error getting instance details"
+)
 async def get_instance_details(ctx: Context, instance_id: str) -> Dict[str, Any]:
     """Get details of a specific instance."""
-    try:
-        await ctx.info(f"Getting details for instance {instance_id}...")
-        result = get_instance(oci_clients["compute"], instance_id)
-        await ctx.info("Retrieved instance details successfully")
-        return result
-    except Exception as e:
-        error_msg = f"Error getting instance details: {str(e)}"
-        await ctx.error(error_msg)
-        return {"error": error_msg}
+    return get_instance(oci_clients["compute"], instance_id)
 
 
 @mcp.tool(name="start_instance")
+@mcp_tool_wrapper(
+    start_msg="Starting instance {instance_id}...",
+    error_prefix="Error starting instance"
+)
 async def start_instance_tool(ctx: Context, instance_id: str) -> Dict[str, Any]:
     """Start an instance."""
-    try:
-        await ctx.info(f"Starting instance {instance_id}...")
-        result = start_instance(oci_clients["compute"], instance_id)
-        await ctx.info(f"Instance start operation completed with status: {result['current_state']}")
-        return result
-    except Exception as e:
-        error_msg = f"Error starting instance: {str(e)}"
-        await ctx.error(error_msg)
-        return {"error": error_msg}
+    return start_instance(oci_clients["compute"], instance_id)
 
 
 @mcp.tool(name="stop_instance")
+@mcp_tool_wrapper(
+    start_msg="Stopping instance {instance_id}...",
+    error_prefix="Error stopping instance"
+)
 async def stop_instance_tool(ctx: Context, instance_id: str, force: bool = False) -> Dict[str, Any]:
     """Stop an instance."""
-    try:
-        stop_type = "force" if force else "soft"
-        await ctx.info(f"Stopping instance {instance_id} ({stop_type})...")
-        result = stop_instance(oci_clients["compute"], instance_id, force)
-        await ctx.info(f"Instance stop operation completed with status: {result['current_state']}")
-        return result
-    except Exception as e:
-        error_msg = f"Error stopping instance: {str(e)}"
-        await ctx.error(error_msg)
-        return {"error": error_msg}
+    return stop_instance(oci_clients["compute"], instance_id, force)
 
 
 # Network, Identity, Storage, etc. tools omitted for brevity in this snippet
@@ -239,172 +276,128 @@ async def stop_instance_tool(ctx: Context, instance_id: str, force: bool = False
 
 # DB Systems tools
 @mcp.tool(name="list_db_systems")
+@mcp_tool_wrapper(
+    start_msg="Listing DB Systems in compartment {compartment_id}...",
+    error_prefix="Error listing DB Systems"
+)
 async def mcp_list_db_systems(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
     """List DB Systems in a compartment."""
-    try:
-        await ctx.info(f"Listing DB Systems in compartment {compartment_id}...")
-        result = list_db_systems(oci_clients["database"], compartment_id)
-        await ctx.info(f"Found {len(result)} DB Systems")
-        return result
-    except Exception as e:
-        msg = f"Error listing DB Systems: {str(e)}"
-        await ctx.error(msg)
-        return [{"error": msg}]
+    return list_db_systems(oci_clients["database"], compartment_id)
 
 
 @mcp.tool(name="get_db_system")
+@mcp_tool_wrapper(
+    start_msg="Getting DB System {db_system_id}...",
+    success_msg="Retrieved DB System successfully",
+    error_prefix="Error getting DB System"
+)
 async def mcp_get_db_system(ctx: Context, db_system_id: str) -> Dict[str, Any]:
     """Get DB System details."""
-    try:
-        await ctx.info(f"Getting DB System {db_system_id}...")
-        result = get_db_system(oci_clients["database"], db_system_id)
-        await ctx.info("Retrieved DB System successfully")
-        return result
-    except Exception as e:
-        msg = f"Error getting DB System: {str(e)}"
-        await ctx.error(msg)
-        return {"error": msg}
+    return get_db_system(oci_clients["database"], db_system_id)
 
 
 @mcp.tool(name="list_db_nodes")
+@mcp_tool_wrapper(
+    start_msg="Listing DB Nodes in compartment {compartment_id}...",
+    error_prefix="Error listing DB Nodes"
+)
 async def mcp_list_db_nodes(ctx: Context, compartment_id: str, db_system_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     List DB Nodes in a compartment, optionally filtered by DB System.
     Note: compartment_id is always required by the SDK.
     """
-    try:
-        await ctx.info(f"Listing DB Nodes in compartment {compartment_id}" + (f" for DB System {db_system_id}" if db_system_id else "") + "...")
-        result = list_db_nodes(
-            oci_clients["database"],
-            db_system_id=db_system_id,
-            compartment_id=compartment_id,
-        )
-        await ctx.info(f"Found {len(result)} DB Nodes")
-        return result
-    except Exception as e:
-        msg = f"Error listing DB Nodes: {str(e)}"
-        await ctx.error(msg)
-        return [{"error": msg}]
+    return list_db_nodes(
+        oci_clients["database"],
+        db_system_id=db_system_id,
+        compartment_id=compartment_id,
+    )
 
 
 @mcp.tool(name="get_db_node")
+@mcp_tool_wrapper(
+    start_msg="Getting DB Node {db_node_id}...",
+    success_msg="Retrieved DB Node successfully",
+    error_prefix="Error getting DB Node"
+)
 async def mcp_get_db_node(ctx: Context, db_node_id: str) -> Dict[str, Any]:
     """Get DB Node details."""
-    try:
-        await ctx.info(f"Getting DB Node {db_node_id}...")
-        result = get_db_node(oci_clients["database"], db_node_id)
-        await ctx.info("Retrieved DB Node successfully")
-        return result
-    except Exception as e:
-        msg = f"Error getting DB Node: {str(e)}"
-        await ctx.error(msg)
-        return {"error": msg}
+    return get_db_node(oci_clients["database"], db_node_id)
 
 
 @mcp.tool(name="start_db_node")
+@mcp_tool_wrapper(
+    start_msg="Starting DB Node {db_node_id}...",
+    error_prefix="Error starting DB Node"
+)
 async def mcp_start_db_node(ctx: Context, db_node_id: str) -> Dict[str, Any]:
     """Start a DB Node."""
-    try:
-        await ctx.info(f"Starting DB Node {db_node_id}...")
-        result = start_db_node(oci_clients["database"], db_node_id)
-        await ctx.info(f"DB Node start operation completed: {result.get('message')}")
-        return result
-    except Exception as e:
-        msg = f"Error starting DB Node: {str(e)}"
-        await ctx.error(msg)
-        return {"error": msg}
+    return start_db_node(oci_clients["database"], db_node_id)
 
 
 @mcp.tool(name="stop_db_node")
+@mcp_tool_wrapper(
+    start_msg="Stopping DB Node {db_node_id}...",
+    error_prefix="Error stopping DB Node"
+)
 async def mcp_stop_db_node(ctx: Context, db_node_id: str, soft: bool = True) -> Dict[str, Any]:
     """Stop a DB Node."""
-    try:
-        stop_type = "soft" if soft else "hard"
-        await ctx.info(f"Stopping DB Node {db_node_id} ({stop_type} stop)...")
-        result = stop_db_node(oci_clients["database"], db_node_id, soft=soft)
-        await ctx.info(f"DB Node stop operation completed: {result.get('message')}")
-        return result
-    except Exception as e:
-        msg = f"Error stopping DB Node: {str(e)}"
-        await ctx.error(msg)
-        return {"error": msg}
+    return stop_db_node(oci_clients["database"], db_node_id, soft=soft)
 
 
 @mcp.tool(name="reboot_db_node")
+@mcp_tool_wrapper(
+    start_msg="Rebooting DB Node {db_node_id}...",
+    error_prefix="Error rebooting DB Node"
+)
 async def mcp_reboot_db_node(ctx: Context, db_node_id: str) -> Dict[str, Any]:
     """Reboot a DB Node."""
-    try:
-        await ctx.info(f"Rebooting DB Node {db_node_id}...")
-        result = reboot_db_node(oci_clients["database"], db_node_id)
-        await ctx.info(f"DB Node reboot operation completed: {result.get('message')}")
-        return result
-    except Exception as e:
-        msg = f"Error rebooting DB Node: {str(e)}"
-        await ctx.error(msg)
-        return {"error": msg}
+    return reboot_db_node(oci_clients["database"], db_node_id)
 
 
 @mcp.tool(name="reset_db_node")
+@mcp_tool_wrapper(
+    start_msg="Resetting DB Node {db_node_id}...",
+    error_prefix="Error resetting DB Node"
+)
 async def mcp_reset_db_node(ctx: Context, db_node_id: str) -> Dict[str, Any]:
     """Reset (force reboot) a DB Node."""
-    try:
-        await ctx.info(f"Resetting DB Node {db_node_id}...")
-        result = reset_db_node(oci_clients["database"], db_node_id)
-        await ctx.info(f"DB Node reset operation completed: {result.get('message')}")
-        return result
-    except Exception as e:
-        msg = f"Error resetting DB Node: {str(e)}"
-        await ctx.error(msg)
-        return {"error": msg}
+    return reset_db_node(oci_clients["database"], db_node_id)
 
 
 @mcp.tool(name="softreset_db_node")
+@mcp_tool_wrapper(
+    start_msg="Soft resetting DB Node {db_node_id}...",
+    error_prefix="Error soft resetting DB Node"
+)
 async def mcp_softreset_db_node(ctx: Context, db_node_id: str) -> Dict[str, Any]:
     """Soft reset (graceful reboot) a DB Node."""
-    try:
-        await ctx.info(f"Soft resetting DB Node {db_node_id}...")
-        result = softreset_db_node(oci_clients["database"], db_node_id)
-        await ctx.info(f"DB Node soft reset operation completed: {result.get('message')}")
-        return result
-    except Exception as e:
-        msg = f"Error soft resetting DB Node: {str(e)}"
-        await ctx.error(msg)
-        return {"error": msg}
+    return softreset_db_node(oci_clients["database"], db_node_id)
 
 
 @mcp.tool(name="start_db_system")
+@mcp_tool_wrapper(
+    start_msg="Starting all DB Nodes for DB System {db_system_id} in compartment {compartment_id}...",
+    error_prefix="Error starting DB System nodes"
+)
 async def mcp_start_db_system(ctx: Context, db_system_id: str, compartment_id: str) -> Dict[str, Any]:
     """
     Start all nodes of a DB System.
     Note: compartment_id required to enumerate nodes correctly.
     """
-    try:
-        await ctx.info(f"Starting all DB Nodes for DB System {db_system_id} in compartment {compartment_id}...")
-        result = start_db_system_all_nodes(oci_clients["database"], db_system_id, compartment_id)
-        await ctx.info(f"DB System start operation completed: {result.get('message')}")
-        return result
-    except Exception as e:
-        msg = f"Error starting DB System nodes: {str(e)}"
-        await ctx.error(msg)
-        return {"error": msg}
+    return start_db_system_all_nodes(oci_clients["database"], db_system_id, compartment_id)
 
 
 @mcp.tool(name="stop_db_system")
+@mcp_tool_wrapper(
+    start_msg="Stopping all DB Nodes for DB System {db_system_id} in compartment {compartment_id}...",
+    error_prefix="Error stopping DB System nodes"
+)
 async def mcp_stop_db_system(ctx: Context, db_system_id: str, compartment_id: str, soft: bool = True) -> Dict[str, Any]:
     """
     Stop all nodes of a DB System.
     Note: compartment_id required to enumerate nodes correctly.
     """
-    try:
-        stop_type = "soft" if soft else "hard"
-        await ctx.info(f"Stopping all DB Nodes for DB System {db_system_id} in compartment {compartment_id} ({stop_type})...")
-        result = stop_db_system_all_nodes(oci_clients["database"], db_system_id, compartment_id, soft=soft)
-        await ctx.info(f"DB System stop operation completed: {result.get('message')}")
-        return result
-    except Exception as e:
-        msg = f"Error stopping DB System nodes: {str(e)}"
-        await ctx.error(msg)
-        return {"error": msg}
+    return stop_db_system_all_nodes(oci_clients["database"], db_system_id, compartment_id, soft=soft)
 
 
 def main() -> None:
