@@ -75,6 +75,8 @@ from mcp_server_oci.tools.security import (
     get_network_security_group,
     list_vaults,
     get_vault,
+    list_keys,
+    get_key,
 )
 from mcp_server_oci.tools.load_balancer import (
     list_load_balancers,
@@ -1368,6 +1370,88 @@ async def mcp_get_tenancy_info(ctx: Context, tenancy_id: str) -> Dict[str, Any]:
         Tenancy details including name, home region, and description
     """
     return get_tenancy_info(oci_clients["identity"], tenancy_id)
+
+
+# Security & Encryption - Vaults
+@mcp.tool(name="list_vaults")
+@mcp_tool_wrapper(
+    start_msg="Listing vaults in compartment {compartment_id}...",
+    error_prefix="Error listing vaults"
+)
+async def mcp_list_vaults(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all KMS vaults in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list vaults from
+
+    Returns:
+        List of vaults with their type, endpoints, and state
+    """
+    return list_vaults(oci_clients["kms_vault"], compartment_id)
+
+
+@mcp.tool(name="get_vault")
+@mcp_tool_wrapper(
+    start_msg="Getting vault details for {vault_id}...",
+    success_msg="Retrieved vault details successfully",
+    error_prefix="Error getting vault details"
+)
+async def mcp_get_vault(ctx: Context, vault_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific KMS vault.
+
+    Args:
+        vault_id: OCID of the vault to retrieve
+
+    Returns:
+        Detailed vault information including crypto and management endpoints
+    """
+    return get_vault(oci_clients["kms_vault"], vault_id)
+
+
+# Security & Encryption - Keys
+@mcp.tool(name="list_keys")
+@mcp_tool_wrapper(
+    start_msg="Listing encryption keys in vault...",
+    error_prefix="Error listing keys"
+)
+async def mcp_list_keys(ctx: Context, compartment_id: str, management_endpoint: str) -> List[Dict[str, Any]]:
+    """
+    List all encryption keys in a vault's compartment.
+
+    Note: You must first get a vault to obtain its management_endpoint.
+
+    Args:
+        compartment_id: OCID of the compartment
+        management_endpoint: Management endpoint from the vault (get from vault details)
+
+    Returns:
+        List of keys with their algorithm, protection mode, and state
+    """
+    return list_keys(oci_clients["config"], management_endpoint, compartment_id)
+
+
+@mcp.tool(name="get_key")
+@mcp_tool_wrapper(
+    start_msg="Getting encryption key details for {key_id}...",
+    success_msg="Retrieved key details successfully",
+    error_prefix="Error getting key details"
+)
+async def mcp_get_key(ctx: Context, key_id: str, management_endpoint: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific encryption key.
+
+    Note: You must first get a vault to obtain its management_endpoint.
+
+    Args:
+        key_id: OCID of the key to retrieve
+        management_endpoint: Management endpoint from the vault (get from vault details)
+
+    Returns:
+        Detailed key information including algorithm, shape, and versions
+    """
+    return get_key(oci_clients["config"], management_endpoint, key_id)
 
 
 def main() -> None:

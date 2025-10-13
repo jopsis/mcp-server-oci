@@ -296,7 +296,96 @@ def get_vault(kms_vault_client: oci.key_management.KmsVaultClient, vault_id: str
         
         logger.info(f"Retrieved details for vault {vault_id}")
         return vault_details
-        
+
     except Exception as e:
         logger.exception(f"Error getting vault details: {e}")
+        raise
+
+
+def list_keys(config: dict, management_endpoint: str, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all keys in a vault's compartment.
+
+    Args:
+        config: OCI config dict
+        management_endpoint: Management endpoint from the vault
+        compartment_id: OCID of the compartment
+
+    Returns:
+        List of keys with their details
+    """
+    try:
+        # Create KMS Management client with the vault's management endpoint
+        kms_management_client = oci.key_management.KmsManagementClient(config, service_endpoint=management_endpoint)
+
+        keys_response = oci.pagination.list_call_get_all_results(
+            kms_management_client.list_keys,
+            compartment_id
+        )
+
+        keys = []
+        for key in keys_response.data:
+            keys.append({
+                "id": key.id,
+                "display_name": key.display_name,
+                "compartment_id": key.compartment_id,
+                "lifecycle_state": key.lifecycle_state,
+                "time_created": str(key.time_created),
+                "vault_id": key.vault_id,
+                "protection_mode": key.protection_mode,
+                "algorithm": key.algorithm,
+            })
+
+        logger.info(f"Found {len(keys)} keys in compartment {compartment_id}")
+        return keys
+
+    except Exception as e:
+        logger.exception(f"Error listing keys: {e}")
+        raise
+
+
+def get_key(config: dict, management_endpoint: str, key_id: str) -> Dict[str, Any]:
+    """
+    Get details of a specific key.
+
+    Args:
+        config: OCI config dict
+        management_endpoint: Management endpoint from the vault
+        key_id: OCID of the key
+
+    Returns:
+        Details of the key
+    """
+    try:
+        # Create KMS Management client with the vault's management endpoint
+        kms_management_client = oci.key_management.KmsManagementClient(config, service_endpoint=management_endpoint)
+
+        key = kms_management_client.get_key(key_id).data
+
+        key_details = {
+            "id": key.id,
+            "display_name": key.display_name,
+            "compartment_id": key.compartment_id,
+            "lifecycle_state": key.lifecycle_state,
+            "time_created": str(key.time_created),
+            "vault_id": key.vault_id,
+            "protection_mode": key.protection_mode,
+            "algorithm": key.algorithm,
+            "current_key_version": key.current_key_version,
+            "key_shape": {
+                "algorithm": key.key_shape.algorithm if key.key_shape else None,
+                "length": key.key_shape.length if key.key_shape else None,
+                "curve_id": key.key_shape.curve_id if key.key_shape else None,
+            } if key.key_shape else None,
+            "is_primary": key.is_primary,
+            "replica_details": {
+                "replication_id": key.replica_details.replication_id if key.replica_details else None,
+            } if key.replica_details else None,
+        }
+
+        logger.info(f"Retrieved details for key {key_id}")
+        return key_details
+
+    except Exception as e:
+        logger.exception(f"Error getting key details: {e}")
         raise
