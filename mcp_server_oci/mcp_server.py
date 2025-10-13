@@ -751,6 +751,190 @@ async def mcp_get_network_security_group(ctx: Context, nsg_id: str) -> Dict[str,
     return get_network_security_group(oci_clients["network"], nsg_id)
 
 
+# Storage tools - Object Storage
+@mcp.tool(name="get_namespace")
+@mcp_tool_wrapper(
+    start_msg="Getting Object Storage namespace...",
+    success_msg="Retrieved namespace successfully",
+    error_prefix="Error getting namespace"
+)
+async def mcp_get_namespace(ctx: Context) -> Dict[str, Any]:
+    """
+    Get the Object Storage namespace for the tenancy.
+
+    The namespace is a unique identifier for the tenancy in Object Storage.
+    It's required for all Object Storage operations.
+
+    Returns:
+        Dictionary with namespace information
+    """
+    return get_namespace(oci_clients["object_storage"])
+
+
+@mcp.tool(name="list_buckets")
+@mcp_tool_wrapper(
+    start_msg="Listing Object Storage buckets in compartment {compartment_id}...",
+    error_prefix="Error listing buckets"
+)
+async def mcp_list_buckets(ctx: Context, compartment_id: str, namespace: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    List all Object Storage buckets in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list buckets from
+        namespace: Optional namespace (if not provided, will be fetched automatically)
+
+    Returns:
+        List of buckets with their configurations and metadata
+    """
+    # Get namespace if not provided
+    if not namespace:
+        namespace_info = get_namespace(oci_clients["object_storage"])
+        namespace = namespace_info.get("namespace")
+
+    return list_buckets(oci_clients["object_storage"], namespace, compartment_id)
+
+
+@mcp.tool(name="get_bucket")
+@mcp_tool_wrapper(
+    start_msg="Getting bucket details for {bucket_name}...",
+    success_msg="Retrieved bucket details successfully",
+    error_prefix="Error getting bucket details"
+)
+async def mcp_get_bucket(ctx: Context, bucket_name: str, namespace: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific Object Storage bucket.
+
+    Args:
+        bucket_name: Name of the bucket
+        namespace: Optional namespace (if not provided, will be fetched automatically)
+
+    Returns:
+        Detailed bucket information including public access settings and versioning
+    """
+    # Get namespace if not provided
+    if not namespace:
+        namespace_info = get_namespace(oci_clients["object_storage"])
+        namespace = namespace_info.get("namespace")
+
+    return get_bucket(oci_clients["object_storage"], namespace, bucket_name)
+
+
+# Storage tools - Block Storage (Volumes)
+@mcp.tool(name="list_volumes")
+@mcp_tool_wrapper(
+    start_msg="Listing Block volumes in compartment {compartment_id}...",
+    error_prefix="Error listing volumes"
+)
+async def mcp_list_volumes(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all Block Storage volumes in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list volumes from
+
+    Returns:
+        List of volumes with their size, state, and attachment information
+    """
+    return list_volumes(oci_clients["block_storage"], compartment_id)
+
+
+@mcp.tool(name="get_volume")
+@mcp_tool_wrapper(
+    start_msg="Getting volume details for {volume_id}...",
+    success_msg="Retrieved volume details successfully",
+    error_prefix="Error getting volume details"
+)
+async def mcp_get_volume(ctx: Context, volume_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific Block Storage volume.
+
+    Args:
+        volume_id: OCID of the volume to retrieve
+
+    Returns:
+        Detailed volume information including size, performance tier, and backup policy
+    """
+    return get_volume(oci_clients["block_storage"], volume_id)
+
+
+@mcp.tool(name="list_boot_volumes")
+@mcp_tool_wrapper(
+    start_msg="Listing boot volumes in compartment {compartment_id}...",
+    error_prefix="Error listing boot volumes"
+)
+async def mcp_list_boot_volumes(ctx: Context, compartment_id: str, availability_domain: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    List all boot volumes in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list boot volumes from
+        availability_domain: Optional AD to filter boot volumes
+
+    Returns:
+        List of boot volumes with their size, state, and source image information
+    """
+    return list_boot_volumes(oci_clients["block_storage"], compartment_id, availability_domain)
+
+
+@mcp.tool(name="get_boot_volume")
+@mcp_tool_wrapper(
+    start_msg="Getting boot volume details for {boot_volume_id}...",
+    success_msg="Retrieved boot volume details successfully",
+    error_prefix="Error getting boot volume details"
+)
+async def mcp_get_boot_volume(ctx: Context, boot_volume_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific boot volume.
+
+    Args:
+        boot_volume_id: OCID of the boot volume to retrieve
+
+    Returns:
+        Detailed boot volume information including size, performance, and source image
+    """
+    return get_boot_volume(oci_clients["block_storage"], boot_volume_id)
+
+
+# Storage tools - File Storage
+@mcp.tool(name="list_file_systems")
+@mcp_tool_wrapper(
+    start_msg="Listing file systems in compartment {compartment_id}...",
+    error_prefix="Error listing file systems"
+)
+async def mcp_list_file_systems(ctx: Context, compartment_id: str, availability_domain: str) -> List[Dict[str, Any]]:
+    """
+    List all File Storage file systems in a compartment and availability domain.
+
+    Args:
+        compartment_id: OCID of the compartment to list file systems from
+        availability_domain: Name of the availability domain
+
+    Returns:
+        List of file systems with their state and metadata
+    """
+    return list_file_systems(oci_clients["file_storage"], compartment_id, availability_domain)
+
+
+@mcp.tool(name="get_file_system")
+@mcp_tool_wrapper(
+    start_msg="Getting file system details for {file_system_id}...",
+    success_msg="Retrieved file system details successfully",
+    error_prefix="Error getting file system details"
+)
+async def mcp_get_file_system(ctx: Context, file_system_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific File Storage file system.
+
+    Args:
+        file_system_id: OCID of the file system to retrieve
+
+    Returns:
+        Detailed file system information including metered bytes and snapshots
+    """
+    return get_file_system(oci_clients["file_storage"], file_system_id)
+
+
 def main() -> None:
     """Run the MCP server for OCI."""
     global oci_clients, current_profile
