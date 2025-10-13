@@ -1240,6 +1240,136 @@ async def mcp_get_network_load_balancer(ctx: Context, network_load_balancer_id: 
     return get_network_load_balancer(oci_clients["network_load_balancer"], network_load_balancer_id)
 
 
+# Infrastructure Utilities - Availability and Fault Domains
+@mcp.tool(name="list_availability_domains")
+@mcp_tool_wrapper(
+    start_msg="Listing availability domains in compartment {compartment_id}...",
+    error_prefix="Error listing availability domains"
+)
+async def mcp_list_availability_domains(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all availability domains in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment (typically use tenancy OCID for root)
+
+    Returns:
+        List of availability domains with their names and IDs
+    """
+    return list_availability_domains(oci_clients["identity"], compartment_id)
+
+
+@mcp.tool(name="list_fault_domains")
+@mcp_tool_wrapper(
+    start_msg="Listing fault domains in availability domain {availability_domain}...",
+    error_prefix="Error listing fault domains"
+)
+async def mcp_list_fault_domains(ctx: Context, compartment_id: str, availability_domain: str) -> List[Dict[str, Any]]:
+    """
+    List all fault domains in an availability domain.
+
+    Args:
+        compartment_id: OCID of the compartment
+        availability_domain: Name of the availability domain
+
+    Returns:
+        List of fault domains with their names and IDs
+    """
+    return list_fault_domains(oci_clients["identity"], compartment_id, availability_domain)
+
+
+# Infrastructure Utilities - Compute Images
+@mcp.tool(name="list_images")
+@mcp_tool_wrapper(
+    start_msg="Listing compute images in compartment {compartment_id}...",
+    error_prefix="Error listing images"
+)
+async def mcp_list_images(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all compute images in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list images from
+
+    Returns:
+        List of images with OS, version, size, and lifecycle state
+    """
+    return list_images(oci_clients["compute"], compartment_id)
+
+
+@mcp.tool(name="get_image")
+@mcp_tool_wrapper(
+    start_msg="Getting image details for {image_id}...",
+    success_msg="Retrieved image details successfully",
+    error_prefix="Error getting image details"
+)
+async def mcp_get_image(ctx: Context, image_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific compute image.
+
+    Args:
+        image_id: OCID of the image to retrieve
+
+    Returns:
+        Detailed image information including launch options and OS details
+    """
+    return get_image(oci_clients["compute"], image_id)
+
+
+# Infrastructure Utilities - Compute Shapes
+@mcp.tool(name="list_shapes")
+@mcp_tool_wrapper(
+    start_msg="Listing compute shapes in compartment {compartment_id}...",
+    error_prefix="Error listing shapes"
+)
+async def mcp_list_shapes(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all compute shapes available in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment
+
+    Returns:
+        List of shapes with CPU, memory, network, and GPU specifications
+    """
+    return list_shapes(oci_clients["compute"], compartment_id)
+
+
+# Infrastructure Utilities - Regions and Tenancy
+@mcp.tool(name="list_regions")
+@mcp_tool_wrapper(
+    start_msg="Listing all available OCI regions...",
+    error_prefix="Error listing regions"
+)
+async def mcp_list_regions(ctx: Context) -> List[Dict[str, Any]]:
+    """
+    List all available OCI regions.
+
+    Returns:
+        List of regions with their keys and names
+    """
+    return list_regions(oci_clients["identity"])
+
+
+@mcp.tool(name="get_tenancy_info")
+@mcp_tool_wrapper(
+    start_msg="Getting tenancy information for {tenancy_id}...",
+    success_msg="Retrieved tenancy information successfully",
+    error_prefix="Error getting tenancy information"
+)
+async def mcp_get_tenancy_info(ctx: Context, tenancy_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a tenancy.
+
+    Args:
+        tenancy_id: OCID of the tenancy
+
+    Returns:
+        Tenancy details including name, home region, and description
+    """
+    return get_tenancy_info(oci_clients["identity"], tenancy_id)
+
+
 def main() -> None:
     """Run the MCP server for OCI."""
     global oci_clients, current_profile
