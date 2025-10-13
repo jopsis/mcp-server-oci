@@ -270,7 +270,15 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.5 - Dynamic Profile Selection (Latest) 🔥
+### v1.6 - Comprehensive Networking Tools (Latest) 🌐
+- **10 new networking tools**: VCNs, Subnets, VNICs, Security Lists, NSGs
+- **Network topology discovery**: Complete visibility of network infrastructure
+- **Security auditing**: Review security rules and network access controls
+- **Connectivity troubleshooting**: VNIC and routing information
+- Total MCP tools increased from 19 to 29
+- Added comprehensive networking usage examples in README
+
+### v1.5 - Dynamic Profile Selection 🔥
 - **Multi-tenancy support**: Switch between OCI profiles without restarting
 - New MCP tools: `list_oci_profiles`, `set_oci_profile`, `get_current_oci_profile`
 - Profile requirement validation in all OCI tools
