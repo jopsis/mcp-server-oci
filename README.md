@@ -238,6 +238,22 @@ Add this configuration to your file:
 - `list_network_load_balancers` - List all network load balancers in a compartment
 - `get_network_load_balancer` - Get detailed network load balancer information including backend sets and listeners
 
+### **Infrastructure Utilities** 🆕
+#### Availability and Fault Domains
+- `list_availability_domains` - List all availability domains in a compartment
+- `list_fault_domains` - List all fault domains in an availability domain
+
+#### Compute Images
+- `list_images` - List all compute images with OS, version, and size
+- `get_image` - Get detailed image information including launch options
+
+#### Compute Shapes
+- `list_shapes` - List all compute shapes with CPU, memory, network, and GPU specs
+
+#### Regions and Tenancy
+- `list_regions` - List all available OCI regions
+- `get_tenancy_info` - Get tenancy details including name and home region
+
 ## 💡 **Usage Examples**
 
 ### **Profile Management**
@@ -387,6 +403,31 @@ Add this configuration to your file:
 "Which load balancers are private vs public?"
 ```
 
+### **Infrastructure Utilities** 🆕
+```bash
+# Availability and Fault Domains
+"List all availability domains in my tenancy"
+"Show me fault domains in availability domain AD-1"
+"What availability domains are available in region us-ashburn-1?"
+
+# Compute Images
+"List all compute images in compartment X"
+"Show me details for image ocid1.image.oc1..."
+"What Oracle Linux images are available?"
+"What is the size and OS version of this image?"
+
+# Compute Shapes
+"List all compute shapes available in compartment Y"
+"What shapes support GPU?"
+"Show me flexible shapes with configurable OCPUs"
+"What is the memory and network bandwidth for shape VM.Standard.E4.Flex?"
+
+# Regions and Tenancy
+"List all available OCI regions"
+"What is my tenancy name and home region?"
+"Show me tenancy information"
+```
+
 ### **Resource Discovery**
 ```bash
 # List compartments
@@ -400,7 +441,17 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.10 - Load Balancer Tools (Latest) ⚖️
+### v1.11 - Infrastructure Utilities (Latest) 🏗️
+- **7 new infrastructure tools**: Availability Domains, Fault Domains, Images, Shapes, Regions, and Tenancy
+- **Availability/Fault Domains**: List ADs and FDs for high availability planning
+- **Compute Images**: List/get images with OS versions and launch options
+- **Compute Shapes**: List shapes with CPU, memory, network, and GPU specifications
+- **Regions & Tenancy**: List all regions and get tenancy information
+- Essential for resource planning, capacity management, and infrastructure discovery
+- Total MCP tools increased from 54 to 61
+- Added comprehensive infrastructure utilities usage examples in README
+
+### v1.10 - Load Balancer Tools ⚖️
 - **4 new load balancer tools**: Classic Load Balancers and Network Load Balancers
 - **Classic Load Balancers**: List/get LBs with backend sets, listeners, and certificates
 - **Network Load Balancers**: List/get NLBs with backend configuration and IP preservation
