@@ -94,6 +94,13 @@ from mcp_server_oci.tools.resources import (
     list_regions,
     get_tenancy_info,
 )
+from mcp_server_oci.tools.cost import (
+    get_cost_usage_summary,
+    get_cost_by_service,
+    get_cost_by_compartment,
+    list_budgets,
+    get_budget,
+)
 # DB Systems tools (our corrected module)
 from mcp_server_oci.tools.dbsystems import (
     list_db_systems,
@@ -237,6 +244,8 @@ def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
         load_balancer_client = oci.load_balancer.LoadBalancerClient(config)
         network_load_balancer_client = oci.network_load_balancer.NetworkLoadBalancerClient(config)
         kms_vault_client = oci.key_management.KmsVaultClient(config)
+        usage_api_client = oci.usage_api.UsageapiClient(config)
+        budget_client = oci.budget.BudgetClient(config)
 
         oci_clients = {
             "compute": compute_client,
@@ -249,6 +258,8 @@ def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
             "load_balancer": load_balancer_client,
             "network_load_balancer": network_load_balancer_client,
             "kms_vault": kms_vault_client,
+            "usage_api": usage_api_client,
+            "budget": budget_client,
             "config": config,
         }
 
@@ -1452,6 +1463,110 @@ async def mcp_get_key(ctx: Context, key_id: str, management_endpoint: str) -> Di
         Detailed key information including algorithm, shape, and versions
     """
     return get_key(oci_clients["config"], management_endpoint, key_id)
+
+
+# Cost Management - Usage and Cost Analysis
+@mcp.tool(name="get_cost_usage_summary")
+@mcp_tool_wrapper(
+    start_msg="Getting cost and usage summary...",
+    error_prefix="Error getting cost usage summary"
+)
+async def mcp_get_cost_usage_summary(ctx: Context, tenant_id: str, time_usage_started: str,
+                                    time_usage_ended: str, granularity: str = "DAILY") -> List[Dict[str, Any]]:
+    """
+    Get cost and usage summary for a tenancy.
+
+    Args:
+        tenant_id: OCID of the tenancy
+        time_usage_started: Start time in ISO format (YYYY-MM-DD)
+        time_usage_ended: End time in ISO format (YYYY-MM-DD)
+        granularity: Granularity of the data (DAILY or MONTHLY), defaults to DAILY
+
+    Returns:
+        List of cost and usage summaries with amounts, services, and compartments
+    """
+    return get_cost_usage_summary(oci_clients["usage_api"], tenant_id, time_usage_started,
+                                 time_usage_ended, granularity)
+
+
+@mcp.tool(name="get_cost_by_service")
+@mcp_tool_wrapper(
+    start_msg="Getting cost breakdown by service...",
+    error_prefix="Error getting cost by service"
+)
+async def mcp_get_cost_by_service(ctx: Context, tenant_id: str, time_usage_started: str,
+                                  time_usage_ended: str) -> List[Dict[str, Any]]:
+    """
+    Get cost breakdown by service for a tenancy.
+
+    Args:
+        tenant_id: OCID of the tenancy
+        time_usage_started: Start time in ISO format (YYYY-MM-DD)
+        time_usage_ended: End time in ISO format (YYYY-MM-DD)
+
+    Returns:
+        List of costs grouped by service with total cost per service
+    """
+    return get_cost_by_service(oci_clients["usage_api"], tenant_id, time_usage_started, time_usage_ended)
+
+
+@mcp.tool(name="get_cost_by_compartment")
+@mcp_tool_wrapper(
+    start_msg="Getting cost breakdown by compartment...",
+    error_prefix="Error getting cost by compartment"
+)
+async def mcp_get_cost_by_compartment(ctx: Context, tenant_id: str, time_usage_started: str,
+                                      time_usage_ended: str) -> List[Dict[str, Any]]:
+    """
+    Get cost breakdown by compartment for a tenancy.
+
+    Args:
+        tenant_id: OCID of the tenancy
+        time_usage_started: Start time in ISO format (YYYY-MM-DD)
+        time_usage_ended: End time in ISO format (YYYY-MM-DD)
+
+    Returns:
+        List of costs grouped by compartment with total cost per compartment
+    """
+    return get_cost_by_compartment(oci_clients["usage_api"], tenant_id, time_usage_started, time_usage_ended)
+
+
+# Cost Management - Budgets
+@mcp.tool(name="list_budgets")
+@mcp_tool_wrapper(
+    start_msg="Listing budgets in compartment {compartment_id}...",
+    error_prefix="Error listing budgets"
+)
+async def mcp_list_budgets(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all budgets in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list budgets from
+
+    Returns:
+        List of budgets with amount, reset period, actual spend, and forecasted spend
+    """
+    return list_budgets(oci_clients["budget"], compartment_id)
+
+
+@mcp.tool(name="get_budget")
+@mcp_tool_wrapper(
+    start_msg="Getting budget details for {budget_id}...",
+    success_msg="Retrieved budget details successfully",
+    error_prefix="Error getting budget details"
+)
+async def mcp_get_budget(ctx: Context, budget_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific budget.
+
+    Args:
+        budget_id: OCID of the budget to retrieve
+
+    Returns:
+        Detailed budget information including targets, alert rules, and spend tracking
+    """
+    return get_budget(oci_clients["budget"], budget_id)
 
 
 def main() -> None:

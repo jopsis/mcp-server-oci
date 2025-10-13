@@ -263,6 +263,16 @@ Add this configuration to your file:
 - `list_keys` - List all encryption keys in a vault's compartment
 - `get_key` - Get detailed key information including algorithm, shape, and versions
 
+### **Cost Management** 🆕
+#### Usage and Cost Analysis
+- `get_cost_usage_summary` - Get cost and usage summary for a tenancy with daily or monthly granularity
+- `get_cost_by_service` - Get cost breakdown by service for a specified time period
+- `get_cost_by_compartment` - Get cost breakdown by compartment for a specified time period
+
+#### Budgets
+- `list_budgets` - List all budgets with amount, actual spend, and forecasted spend
+- `get_budget` - Get detailed budget information including targets and alert rules
+
 ## 💡 **Usage Examples**
 
 ### **Profile Management**
@@ -456,6 +466,27 @@ Add this configuration to your file:
 "Then, use that endpoint to list or get keys in that vault"
 ```
 
+### **Cost Management** 🆕
+```bash
+# Usage and Cost Analysis
+"Show me cost and usage summary for the last 30 days"
+"Get cost breakdown by service from 2024-01-01 to 2024-01-31"
+"What are my costs by compartment for this month?"
+"Show me daily cost summary for my tenancy"
+
+# Cost analysis queries
+"Which services are costing the most?"
+"What compartment has the highest spend?"
+"Show me monthly cost trends"
+
+# Budgets
+"List all budgets in compartment X"
+"Show me budget details for budget ocid1.budget.oc1..."
+"What is my actual spend vs budget?"
+"Show me forecasted spend for this budget"
+"Which budgets have alert rules configured?"
+```
+
 ### **Resource Discovery**
 ```bash
 # List compartments
@@ -469,7 +500,16 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.12 - Security & Encryption Tools (Latest) 🔐
+### v1.13 - Cost Management Tools (Latest) 💰
+- **5 new cost management tools**: Usage/Cost Analysis and Budgets
+- **Usage Analysis**: Get cost summaries with daily/monthly granularity
+- **Cost Breakdown**: Analyze costs by service or compartment for any time period
+- **Budget Management**: List/get budgets with actual spend, forecasted spend, and alert rules
+- Essential for cost optimization, budget tracking, and financial governance
+- Total MCP tools increased from 65 to 70
+- Added comprehensive cost management usage examples in README
+
+### v1.12 - Security & Encryption Tools 🔐
 - **4 new security tools**: KMS Vaults and Encryption Keys
 - **KMS Vaults**: List/get vaults with crypto and management endpoints
 - **Encryption Keys**: List/get keys with algorithm, protection mode, and key shape

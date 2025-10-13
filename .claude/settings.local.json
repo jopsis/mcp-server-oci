@@ -11,7 +11,8 @@
       "Bash(git tag:*)",
       "Bash(git push:*)",
       "Bash(git pull:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)"
     ],
     "deny": [],
     "ask": []
