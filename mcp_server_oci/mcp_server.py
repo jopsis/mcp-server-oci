@@ -935,6 +935,83 @@ async def mcp_get_file_system(ctx: Context, file_system_id: str) -> Dict[str, An
     return get_file_system(oci_clients["file_storage"], file_system_id)
 
 
+# Database tools - Regular Databases
+@mcp.tool(name="list_databases")
+@mcp_tool_wrapper(
+    start_msg="Listing databases in compartment {compartment_id}...",
+    error_prefix="Error listing databases"
+)
+async def mcp_list_databases(ctx: Context, compartment_id: str, db_system_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    List all databases in a compartment, optionally filtered by DB System.
+
+    Args:
+        compartment_id: OCID of the compartment to list databases from
+        db_system_id: Optional OCID of the DB System to filter databases
+
+    Returns:
+        List of databases with their state, version, and connection information
+    """
+    return list_databases(oci_clients["database"], compartment_id, db_system_id)
+
+
+@mcp.tool(name="get_database")
+@mcp_tool_wrapper(
+    start_msg="Getting database details for {database_id}...",
+    success_msg="Retrieved database details successfully",
+    error_prefix="Error getting database details"
+)
+async def mcp_get_database(ctx: Context, database_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific database.
+
+    Args:
+        database_id: OCID of the database to retrieve
+
+    Returns:
+        Detailed database information including connection strings, character set, and PDB name
+    """
+    return get_database(oci_clients["database"], database_id)
+
+
+# Database tools - Autonomous Databases
+@mcp.tool(name="list_autonomous_databases")
+@mcp_tool_wrapper(
+    start_msg="Listing Autonomous Databases in compartment {compartment_id}...",
+    error_prefix="Error listing Autonomous Databases"
+)
+async def mcp_list_autonomous_databases(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all Autonomous Databases in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list Autonomous Databases from
+
+    Returns:
+        List of Autonomous Databases with their configuration, workload type, and connection info
+    """
+    return list_autonomous_databases(oci_clients["database"], compartment_id)
+
+
+@mcp.tool(name="get_autonomous_database")
+@mcp_tool_wrapper(
+    start_msg="Getting Autonomous Database details for {autonomous_database_id}...",
+    success_msg="Retrieved Autonomous Database details successfully",
+    error_prefix="Error getting Autonomous Database details"
+)
+async def mcp_get_autonomous_database(ctx: Context, autonomous_database_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific Autonomous Database.
+
+    Args:
+        autonomous_database_id: OCID of the Autonomous Database to retrieve
+
+    Returns:
+        Detailed Autonomous Database information including connection strings, wallet info, and auto-scaling settings
+    """
+    return get_autonomous_database(oci_clients["database"], autonomous_database_id)
+
+
 def main() -> None:
     """Run the MCP server for OCI."""
     global oci_clients, current_profile

@@ -155,7 +155,8 @@ Add this configuration to your file:
 - `start_instance` - Start a stopped instance
 - `stop_instance` - Stop a running instance (supports soft/force stop)
 
-### **Database Systems** 🔥
+### **Databases** 🔥
+#### DB Systems
 - `list_db_systems` - List DB Systems in a compartment
 - `get_db_system` - Get detailed DB System information
 - `list_db_nodes` - List DB Nodes in a compartment (optionally filtered by DB System)
@@ -167,6 +168,14 @@ Add this configuration to your file:
 - `softreset_db_node` - Soft reset (graceful reboot) a DB Node
 - `start_db_system` - Start all nodes of a DB System
 - `stop_db_system` - Stop all nodes of a DB System
+
+#### Regular Databases 🆕
+- `list_databases` - List databases in a compartment (optionally filtered by DB System)
+- `get_database` - Get detailed database information including connection strings and PDB name
+
+#### Autonomous Databases 🆕
+- `list_autonomous_databases` - List Autonomous Databases with workload type and connection info
+- `get_autonomous_database` - Get detailed ADB info including wallet info and auto-scaling settings
 
 ### **Networking**
 #### Virtual Cloud Networks (VCNs)
@@ -235,22 +244,31 @@ Add this configuration to your file:
 "Stop the instance ocid1.instance.oc1... with force stop"
 ```
 
-### **Database Systems Management**
+### **Database Management**
 ```bash
-# List DB Systems
+# DB Systems
 "Show me all DB Systems in compartment ocid1.compartment.oc1..."
-
-# Get DB System details
 "Get details for DB System ocid1.dbsystem.oc1..."
 
-# Manage DB Nodes
+# DB Nodes management
 "List all DB Nodes for DB System ocid1.dbsystem.oc1..."
 "Start DB Node ocid1.dbnode.oc1..."
 "Stop all nodes of DB System ocid1.dbsystem.oc1..."
-
-# Reboot operations
 "Reboot DB Node ocid1.dbnode.oc1..."
 "Soft reset DB Node ocid1.dbnode.oc1..."
+
+# Regular Databases 🆕
+"List all databases in compartment X"
+"Show me databases in DB System Y"
+"Get connection strings for database ocid1.database.oc1..."
+"What is the character set and PDB name of this database?"
+
+# Autonomous Databases 🆕
+"List all Autonomous Databases in compartment Z"
+"Show me details for ADB ocid1.autonomousdatabase.oc1..."
+"What workload type is this Autonomous Database?"
+"Get connection strings and wallet info for this ADB"
+"Is auto-scaling enabled on this Autonomous Database?"
 ```
 
 ### **Networking Management**
@@ -306,7 +324,15 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.7 - Storage Tools (Latest) 💾
+### v1.8 - Database Tools (Latest) 🗄️
+- **4 new database tools**: Regular Databases and Autonomous Databases
+- **Regular Databases**: List/get databases with connection strings and PDB names
+- **Autonomous Databases**: List/get ADB with workload type, wallet info, and auto-scaling
+- Complete database ecosystem coverage: DB Systems, DB Nodes, Databases, and ADB
+- Total MCP tools increased from 38 to 42
+- Added comprehensive database usage examples in README
+
+### v1.7 - Storage Tools 💾
 - **9 new storage tools**: Object Storage, Block Storage, File Storage
 - **Object Storage**: Get namespace, list/get buckets with public access info
 - **Block Storage**: List/get volumes and boot volumes with performance tiers
