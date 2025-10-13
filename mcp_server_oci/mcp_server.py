@@ -1164,6 +1164,82 @@ async def mcp_get_dynamic_group(ctx: Context, dynamic_group_id: str) -> Dict[str
     return get_dynamic_group(oci_clients["identity"], dynamic_group_id)
 
 
+# Load Balancer tools - Load Balancers
+@mcp.tool(name="list_load_balancers")
+@mcp_tool_wrapper(
+    start_msg="Listing load balancers in compartment {compartment_id}...",
+    error_prefix="Error listing load balancers"
+)
+async def mcp_list_load_balancers(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all classic load balancers in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list load balancers from
+
+    Returns:
+        List of load balancers with their IP addresses, shape, and state
+    """
+    return list_load_balancers(oci_clients["load_balancer"], compartment_id)
+
+
+@mcp.tool(name="get_load_balancer")
+@mcp_tool_wrapper(
+    start_msg="Getting load balancer details for {load_balancer_id}...",
+    success_msg="Retrieved load balancer details successfully",
+    error_prefix="Error getting load balancer details"
+)
+async def mcp_get_load_balancer(ctx: Context, load_balancer_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific classic load balancer.
+
+    Args:
+        load_balancer_id: OCID of the load balancer to retrieve
+
+    Returns:
+        Detailed load balancer information including backend sets, listeners, and certificates
+    """
+    return get_load_balancer(oci_clients["load_balancer"], load_balancer_id)
+
+
+# Load Balancer tools - Network Load Balancers
+@mcp.tool(name="list_network_load_balancers")
+@mcp_tool_wrapper(
+    start_msg="Listing network load balancers in compartment {compartment_id}...",
+    error_prefix="Error listing network load balancers"
+)
+async def mcp_list_network_load_balancers(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all network load balancers in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list network load balancers from
+
+    Returns:
+        List of network load balancers with their IP addresses and state
+    """
+    return list_network_load_balancers(oci_clients["network_load_balancer"], compartment_id)
+
+
+@mcp.tool(name="get_network_load_balancer")
+@mcp_tool_wrapper(
+    start_msg="Getting network load balancer details for {network_load_balancer_id}...",
+    success_msg="Retrieved network load balancer details successfully",
+    error_prefix="Error getting network load balancer details"
+)
+async def mcp_get_network_load_balancer(ctx: Context, network_load_balancer_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific network load balancer.
+
+    Args:
+        network_load_balancer_id: OCID of the network load balancer to retrieve
+
+    Returns:
+        Detailed network load balancer information including backend sets and listeners
+    """
+    return get_network_load_balancer(oci_clients["network_load_balancer"], network_load_balancer_id)
+
+
 def main() -> None:
     """Run the MCP server for OCI."""
     global oci_clients, current_profile
