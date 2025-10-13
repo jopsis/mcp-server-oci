@@ -557,6 +557,44 @@ async def mcp_stop_db_system(ctx: Context, db_system_id: str, compartment_id: st
     return stop_db_system_all_nodes(oci_clients["database"], db_system_id, compartment_id, soft=soft)
 
 
+# Network tools
+@mcp.tool(name="list_vcns")
+@mcp_tool_wrapper(
+    start_msg="Listing VCNs in compartment {compartment_id}...",
+    error_prefix="Error listing VCNs"
+)
+async def mcp_list_vcns(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all Virtual Cloud Networks (VCNs) in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list VCNs from
+
+    Returns:
+        List of VCNs with their CIDR blocks, DNS labels, and default resources
+    """
+    return list_vcns(oci_clients["network"], compartment_id)
+
+
+@mcp.tool(name="get_vcn")
+@mcp_tool_wrapper(
+    start_msg="Getting VCN details for {vcn_id}...",
+    success_msg="Retrieved VCN details successfully",
+    error_prefix="Error getting VCN details"
+)
+async def mcp_get_vcn(ctx: Context, vcn_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific VCN.
+
+    Args:
+        vcn_id: OCID of the VCN to retrieve
+
+    Returns:
+        Detailed VCN information including CIDR blocks, DNS configuration, and default resources
+    """
+    return get_vcn(oci_clients["network"], vcn_id)
+
+
 def main() -> None:
     """Run the MCP server for OCI."""
     global oci_clients, current_profile
