@@ -273,6 +273,21 @@ Add this configuration to your file:
 - `list_budgets` - List all budgets with amount, actual spend, and forecasted spend
 - `get_budget` - Get detailed budget information including targets and alert rules
 
+### **Monitoring & Observability** 🆕
+#### Alarms
+- `list_alarms` - List all alarms with query, severity, and destinations
+- `get_alarm` - Get detailed alarm information including thresholds and notification settings
+- `get_alarm_history` - Get alarm state history with timestamps and state transitions
+
+#### Metrics
+- `list_metrics` - List available metrics with namespaces and dimensions
+- `query_metric_data` - Query metric data for a time range using MQL
+
+#### Logs
+- `search_logs` - Search logs using the Logging Search API
+- `list_log_groups` - List all log groups in a compartment
+- `list_logs` - List all logs in a log group with types and retention
+
 ## 💡 **Usage Examples**
 
 ### **Profile Management**
@@ -487,6 +502,33 @@ Add this configuration to your file:
 "Which budgets have alert rules configured?"
 ```
 
+### **Monitoring & Observability** 🆕
+```bash
+# Alarms
+"List all alarms in compartment X"
+"Show me details for alarm ocid1.alarm.oc1..."
+"What alarms are currently firing?"
+"Show me alarm history for the last 24 hours"
+"Which alarms have critical severity?"
+
+# Metrics
+"List all available metrics in compartment Y"
+"Show me CPU metrics for compute instances"
+"Query CpuUtilization for the last hour"
+"What metrics are available for namespace oci_computeagent?"
+
+# Logs
+"Search logs for errors in the last hour"
+"List all log groups in compartment Z"
+"Show me logs in log group ocid1.loggroup.oc1..."
+"Search for 'ERROR' in application logs"
+
+# Troubleshooting workflows
+"Show me all firing alarms and their metric queries"
+"Get CPU utilization data for instance X in the last 2 hours"
+"Search logs for errors related to database connections"
+```
+
 ### **Resource Discovery**
 ```bash
 # List compartments
@@ -500,7 +542,16 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.13 - Cost Management Tools (Latest) 💰
+### v1.14 - Monitoring & Observability Tools (Latest) 🔍
+- **8 new monitoring tools**: Alarms, Metrics, and Logs
+- **Alarms**: List/get alarms with severity, query history, and state transitions
+- **Metrics**: List metrics, query time-series data with MQL for performance analysis
+- **Logs**: Search logs, list log groups and logs for troubleshooting
+- Essential for real-time monitoring, troubleshooting, and incident response
+- Total MCP tools increased from 70 to 78
+- Added comprehensive monitoring & observability usage examples in README
+
+### v1.13 - Cost Management Tools 💰
 - **5 new cost management tools**: Usage/Cost Analysis and Budgets
 - **Usage Analysis**: Get cost summaries with daily/monthly granularity
 - **Cost Breakdown**: Analyze costs by service or compartment for any time period
