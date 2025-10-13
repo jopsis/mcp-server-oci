@@ -168,7 +168,7 @@ Add this configuration to your file:
 - `start_db_system` - Start all nodes of a DB System
 - `stop_db_system` - Stop all nodes of a DB System
 
-### **Networking** 🆕
+### **Networking**
 #### Virtual Cloud Networks (VCNs)
 - `list_vcns` - List all VCNs in a compartment with CIDR blocks and DNS info
 - `get_vcn` - Get detailed VCN information including IPv6 CIDR blocks
@@ -186,6 +186,22 @@ Add this configuration to your file:
 - `get_security_list` - Get detailed security list with all rules
 - `list_network_security_groups` - List Network Security Groups (NSGs) in a compartment
 - `get_network_security_group` - Get detailed NSG information with all security rules
+
+### **Storage** 🆕
+#### Object Storage
+- `get_namespace` - Get the Object Storage namespace for the tenancy
+- `list_buckets` - List all Object Storage buckets in a compartment
+- `get_bucket` - Get detailed bucket information including public access settings and versioning
+
+#### Block Storage
+- `list_volumes` - List all Block Storage volumes in a compartment
+- `get_volume` - Get detailed volume information including size, performance tier, and backup policy
+- `list_boot_volumes` - List all boot volumes in a compartment (optionally filtered by AD)
+- `get_boot_volume` - Get detailed boot volume information including source image
+
+#### File Storage
+- `list_file_systems` - List all File Storage file systems in a compartment and AD
+- `get_file_system` - Get detailed file system information including metered bytes and snapshots
 
 ## 💡 **Usage Examples**
 
@@ -237,7 +253,7 @@ Add this configuration to your file:
 "Soft reset DB Node ocid1.dbnode.oc1..."
 ```
 
-### **Networking Management** 🆕
+### **Networking Management**
 ```bash
 # VCN operations
 "List all VCNs in compartment ocid1.compartment.oc1..."
@@ -257,6 +273,26 @@ Add this configuration to your file:
 "Show me details for VNIC ocid1.vnic.oc1..."
 ```
 
+### **Storage Management** 🆕
+```bash
+# Object Storage operations
+"What is my Object Storage namespace?"
+"List all buckets in compartment X"
+"Show me details for bucket 'my-data-bucket'"
+"Is bucket 'public-bucket' publicly accessible?"
+
+# Block Storage operations
+"List all volumes in compartment Y"
+"Show me details for volume ocid1.volume.oc1..."
+"List all boot volumes in compartment Z"
+"What is the size and performance tier of this volume?"
+
+# File Storage operations
+"List all file systems in compartment W and AD-1"
+"Show me details for file system ocid1.filesystem.oc1..."
+"How many bytes is this file system using?"
+```
+
 ### **Resource Discovery**
 ```bash
 # List compartments
@@ -270,7 +306,15 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.6 - Comprehensive Networking Tools (Latest) 🌐
+### v1.7 - Storage Tools (Latest) 💾
+- **9 new storage tools**: Object Storage, Block Storage, File Storage
+- **Object Storage**: Get namespace, list/get buckets with public access info
+- **Block Storage**: List/get volumes and boot volumes with performance tiers
+- **File Storage**: List/get file systems with metered bytes
+- Total MCP tools increased from 29 to 38
+- Added comprehensive storage usage examples in README
+
+### v1.6 - Comprehensive Networking Tools 🌐
 - **10 new networking tools**: VCNs, Subnets, VNICs, Security Lists, NSGs
 - **Network topology discovery**: Complete visibility of network infrastructure
 - **Security auditing**: Review security rules and network access controls
