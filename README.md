@@ -146,8 +146,25 @@ Add this configuration to your file:
 - `set_oci_profile` - Activate a specific profile for API calls
 - `get_current_oci_profile` - Show currently active profile
 
-### **Identity & Access Management**
+### **Identity & Access Management** 🆕
+#### Compartments
 - `list_compartments` - List all compartments accessible to you
+
+#### Users
+- `list_users` - List all IAM users in a compartment with capabilities and MFA status
+- `get_user` - Get detailed user information including group memberships
+
+#### Groups
+- `list_groups` - List all IAM groups in a compartment with member count
+- `get_group` - Get detailed group information including members
+
+#### Policies
+- `list_policies` - List all IAM policies in a compartment with statements
+- `get_policy` - Get detailed policy information with all policy statements
+
+#### Dynamic Groups
+- `list_dynamic_groups` - List all dynamic groups with matching rules
+- `get_dynamic_group` - Get detailed dynamic group info with instance principal rules
 
 ### **Compute Resources**
 - `list_instances` - List virtual machine instances in a compartment
@@ -229,6 +246,37 @@ Add this configuration to your file:
 
 # Switch between tenancies
 "Switch to the DEFAULT profile"
+```
+
+### **Identity & Access Management** 🆕
+```bash
+# Users
+"List all IAM users in my tenancy"
+"Show me details for user ocid1.user.oc1..."
+"Does this user have MFA enabled?"
+"What groups is this user a member of?"
+
+# Groups
+"List all IAM groups in compartment X"
+"Show me members of group 'Administrators'"
+"Get details for group ocid1.group.oc1..."
+
+# Policies
+"List all IAM policies in the root compartment"
+"Show me policy statements for 'network-admins-policy'"
+"What permissions does this policy grant?"
+"Get details for policy ocid1.policy.oc1..."
+
+# Dynamic Groups
+"List all dynamic groups in my tenancy"
+"Show me matching rules for dynamic group 'instance-principals'"
+"What instances match this dynamic group?"
+"Get details for dynamic group ocid1.dynamicgroup.oc1..."
+
+# Security auditing
+"Which users have admin access?"
+"Show me all policies that grant object storage access"
+"What dynamic groups allow instance principals?"
 ```
 
 ### **Compute Instance Management**
@@ -324,7 +372,16 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.8 - Database Tools (Latest) 🗄️
+### v1.9 - Identity & Access Management Tools (Latest) 🔐
+- **8 new IAM tools**: Users, Groups, Policies, Dynamic Groups
+- **Security auditing**: Review user capabilities, MFA status, and group memberships
+- **Policy management**: List and inspect all IAM policy statements
+- **Dynamic groups**: View instance principal matching rules
+- Essential for compliance, security audits, and access troubleshooting
+- Total MCP tools increased from 42 to 50
+- Added comprehensive IAM usage examples in README
+
+### v1.8 - Database Tools 🗄️
 - **4 new database tools**: Regular Databases and Autonomous Databases
 - **Regular Databases**: List/get databases with connection strings and PDB names
 - **Autonomous Databases**: List/get ADB with workload type, wallet info, and auto-scaling

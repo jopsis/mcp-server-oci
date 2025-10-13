@@ -1012,6 +1012,158 @@ async def mcp_get_autonomous_database(ctx: Context, autonomous_database_id: str)
     return get_autonomous_database(oci_clients["database"], autonomous_database_id)
 
 
+# Identity & Access Management tools - Users
+@mcp.tool(name="list_users")
+@mcp_tool_wrapper(
+    start_msg="Listing IAM users in compartment {compartment_id}...",
+    error_prefix="Error listing users"
+)
+async def mcp_list_users(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all IAM users in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list users from
+
+    Returns:
+        List of users with their state, capabilities, and MFA status
+    """
+    return list_users(oci_clients["identity"], compartment_id)
+
+
+@mcp.tool(name="get_user")
+@mcp_tool_wrapper(
+    start_msg="Getting user details for {user_id}...",
+    success_msg="Retrieved user details successfully",
+    error_prefix="Error getting user details"
+)
+async def mcp_get_user(ctx: Context, user_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific IAM user.
+
+    Args:
+        user_id: OCID of the user to retrieve
+
+    Returns:
+        Detailed user information including capabilities, MFA status, and group memberships
+    """
+    return get_user(oci_clients["identity"], user_id)
+
+
+# Identity & Access Management tools - Groups
+@mcp.tool(name="list_groups")
+@mcp_tool_wrapper(
+    start_msg="Listing IAM groups in compartment {compartment_id}...",
+    error_prefix="Error listing groups"
+)
+async def mcp_list_groups(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all IAM groups in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list groups from
+
+    Returns:
+        List of groups with their members count and state
+    """
+    return list_groups(oci_clients["identity"], compartment_id)
+
+
+@mcp.tool(name="get_group")
+@mcp_tool_wrapper(
+    start_msg="Getting group details for {group_id}...",
+    success_msg="Retrieved group details successfully",
+    error_prefix="Error getting group details"
+)
+async def mcp_get_group(ctx: Context, group_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific IAM group.
+
+    Args:
+        group_id: OCID of the group to retrieve
+
+    Returns:
+        Detailed group information including members and description
+    """
+    return get_group(oci_clients["identity"], group_id)
+
+
+# Identity & Access Management tools - Policies
+@mcp.tool(name="list_policies")
+@mcp_tool_wrapper(
+    start_msg="Listing IAM policies in compartment {compartment_id}...",
+    error_prefix="Error listing policies"
+)
+async def mcp_list_policies(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all IAM policies in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list policies from
+
+    Returns:
+        List of policies with their statements and state
+    """
+    return list_policies(oci_clients["identity"], compartment_id)
+
+
+@mcp.tool(name="get_policy")
+@mcp_tool_wrapper(
+    start_msg="Getting policy details for {policy_id}...",
+    success_msg="Retrieved policy details successfully",
+    error_prefix="Error getting policy details"
+)
+async def mcp_get_policy(ctx: Context, policy_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific IAM policy.
+
+    Args:
+        policy_id: OCID of the policy to retrieve
+
+    Returns:
+        Detailed policy information including all policy statements
+    """
+    return get_policy(oci_clients["identity"], policy_id)
+
+
+# Identity & Access Management tools - Dynamic Groups
+@mcp.tool(name="list_dynamic_groups")
+@mcp_tool_wrapper(
+    start_msg="Listing dynamic groups in compartment {compartment_id}...",
+    error_prefix="Error listing dynamic groups"
+)
+async def mcp_list_dynamic_groups(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all dynamic groups in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list dynamic groups from
+
+    Returns:
+        List of dynamic groups with their matching rules and state
+    """
+    return list_dynamic_groups(oci_clients["identity"], compartment_id)
+
+
+@mcp.tool(name="get_dynamic_group")
+@mcp_tool_wrapper(
+    start_msg="Getting dynamic group details for {dynamic_group_id}...",
+    success_msg="Retrieved dynamic group details successfully",
+    error_prefix="Error getting dynamic group details"
+)
+async def mcp_get_dynamic_group(ctx: Context, dynamic_group_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific dynamic group.
+
+    Args:
+        dynamic_group_id: OCID of the dynamic group to retrieve
+
+    Returns:
+        Detailed dynamic group information including matching rules for instance principals
+    """
+    return get_dynamic_group(oci_clients["identity"], dynamic_group_id)
+
+
 def main() -> None:
     """Run the MCP server for OCI."""
     global oci_clients, current_profile
