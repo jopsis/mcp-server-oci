@@ -557,6 +557,200 @@ async def mcp_stop_db_system(ctx: Context, db_system_id: str, compartment_id: st
     return stop_db_system_all_nodes(oci_clients["database"], db_system_id, compartment_id, soft=soft)
 
 
+# Network tools - VCNs
+@mcp.tool(name="list_vcns")
+@mcp_tool_wrapper(
+    start_msg="Listing VCNs in compartment {compartment_id}...",
+    error_prefix="Error listing VCNs"
+)
+async def mcp_list_vcns(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all Virtual Cloud Networks (VCNs) in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list VCNs from
+
+    Returns:
+        List of VCNs with their CIDR blocks, DNS labels, and default resources
+    """
+    return list_vcns(oci_clients["network"], compartment_id)
+
+
+@mcp.tool(name="get_vcn")
+@mcp_tool_wrapper(
+    start_msg="Getting VCN details for {vcn_id}...",
+    success_msg="Retrieved VCN details successfully",
+    error_prefix="Error getting VCN details"
+)
+async def mcp_get_vcn(ctx: Context, vcn_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific VCN.
+
+    Args:
+        vcn_id: OCID of the VCN to retrieve
+
+    Returns:
+        Detailed VCN information including CIDR blocks, DNS configuration, and default resources
+    """
+    return get_vcn(oci_clients["network"], vcn_id)
+
+
+# Network tools - Subnets
+@mcp.tool(name="list_subnets")
+@mcp_tool_wrapper(
+    start_msg="Listing subnets in compartment {compartment_id}...",
+    error_prefix="Error listing subnets"
+)
+async def mcp_list_subnets(ctx: Context, compartment_id: str, vcn_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    List all subnets in a compartment, optionally filtered by VCN.
+
+    Args:
+        compartment_id: OCID of the compartment to list subnets from
+        vcn_id: Optional OCID of the VCN to filter subnets
+
+    Returns:
+        List of subnets with CIDR blocks, security lists, and routing information
+    """
+    return list_subnets(oci_clients["network"], compartment_id, vcn_id)
+
+
+@mcp.tool(name="get_subnet")
+@mcp_tool_wrapper(
+    start_msg="Getting subnet details for {subnet_id}...",
+    success_msg="Retrieved subnet details successfully",
+    error_prefix="Error getting subnet details"
+)
+async def mcp_get_subnet(ctx: Context, subnet_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific subnet.
+
+    Args:
+        subnet_id: OCID of the subnet to retrieve
+
+    Returns:
+        Detailed subnet information including CIDR, security lists, and routing
+    """
+    return get_subnet(oci_clients["network"], subnet_id)
+
+
+# Network tools - VNICs
+@mcp.tool(name="list_vnics")
+@mcp_tool_wrapper(
+    start_msg="Listing VNICs in compartment {compartment_id}...",
+    error_prefix="Error listing VNICs"
+)
+async def mcp_list_vnics(ctx: Context, compartment_id: str, instance_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    List all Virtual Network Interface Cards (VNICs) in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list VNICs from
+        instance_id: Optional OCID of the instance to filter VNICs
+
+    Returns:
+        List of VNICs with their IP addresses, subnet information, and security groups
+    """
+    return list_vnics(oci_clients["compute"], oci_clients["network"], compartment_id, instance_id)
+
+
+@mcp.tool(name="get_vnic")
+@mcp_tool_wrapper(
+    start_msg="Getting VNIC details for {vnic_id}...",
+    success_msg="Retrieved VNIC details successfully",
+    error_prefix="Error getting VNIC details"
+)
+async def mcp_get_vnic(ctx: Context, vnic_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific VNIC.
+
+    Args:
+        vnic_id: OCID of the VNIC to retrieve
+
+    Returns:
+        Detailed VNIC information including IP addresses, subnet, and NSG associations
+    """
+    return get_vnic(oci_clients["network"], vnic_id)
+
+
+# Network tools - Security Lists
+@mcp.tool(name="list_security_lists")
+@mcp_tool_wrapper(
+    start_msg="Listing security lists in compartment {compartment_id}...",
+    error_prefix="Error listing security lists"
+)
+async def mcp_list_security_lists(ctx: Context, compartment_id: str, vcn_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    List all security lists in a compartment, optionally filtered by VCN.
+
+    Args:
+        compartment_id: OCID of the compartment to list security lists from
+        vcn_id: Optional OCID of the VCN to filter security lists
+
+    Returns:
+        List of security lists with their ingress and egress rules
+    """
+    return list_security_lists(oci_clients["network"], compartment_id, vcn_id)
+
+
+@mcp.tool(name="get_security_list")
+@mcp_tool_wrapper(
+    start_msg="Getting security list details for {security_list_id}...",
+    success_msg="Retrieved security list details successfully",
+    error_prefix="Error getting security list details"
+)
+async def mcp_get_security_list(ctx: Context, security_list_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific security list.
+
+    Args:
+        security_list_id: OCID of the security list to retrieve
+
+    Returns:
+        Detailed security list with all ingress and egress rules
+    """
+    return get_security_list(oci_clients["network"], security_list_id)
+
+
+# Network tools - Network Security Groups
+@mcp.tool(name="list_network_security_groups")
+@mcp_tool_wrapper(
+    start_msg="Listing network security groups in compartment {compartment_id}...",
+    error_prefix="Error listing network security groups"
+)
+async def mcp_list_network_security_groups(ctx: Context, compartment_id: str, vcn_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    List all Network Security Groups (NSGs) in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list NSGs from
+        vcn_id: Optional OCID of the VCN to filter NSGs
+
+    Returns:
+        List of NSGs with their security rules
+    """
+    return list_network_security_groups(oci_clients["network"], compartment_id, vcn_id)
+
+
+@mcp.tool(name="get_network_security_group")
+@mcp_tool_wrapper(
+    start_msg="Getting network security group details for {nsg_id}...",
+    success_msg="Retrieved network security group details successfully",
+    error_prefix="Error getting network security group details"
+)
+async def mcp_get_network_security_group(ctx: Context, nsg_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific Network Security Group.
+
+    Args:
+        nsg_id: OCID of the NSG to retrieve
+
+    Returns:
+        Detailed NSG information with all security rules
+    """
+    return get_network_security_group(oci_clients["network"], nsg_id)
+
+
 def main() -> None:
     """Run the MCP server for OCI."""
     global oci_clients, current_profile

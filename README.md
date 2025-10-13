@@ -168,6 +168,25 @@ Add this configuration to your file:
 - `start_db_system` - Start all nodes of a DB System
 - `stop_db_system` - Stop all nodes of a DB System
 
+### **Networking** 🆕
+#### Virtual Cloud Networks (VCNs)
+- `list_vcns` - List all VCNs in a compartment with CIDR blocks and DNS info
+- `get_vcn` - Get detailed VCN information including IPv6 CIDR blocks
+
+#### Subnets
+- `list_subnets` - List all subnets in a compartment (optionally filtered by VCN)
+- `get_subnet` - Get detailed subnet information with security lists and routing
+
+#### Virtual Network Interface Cards (VNICs)
+- `list_vnics` - List all VNICs in a compartment (optionally filtered by instance)
+- `get_vnic` - Get detailed VNIC information including IP addresses and NSG associations
+
+#### Security
+- `list_security_lists` - List security lists with ingress/egress rules (optionally filtered by VCN)
+- `get_security_list` - Get detailed security list with all rules
+- `list_network_security_groups` - List Network Security Groups (NSGs) in a compartment
+- `get_network_security_group` - Get detailed NSG information with all security rules
+
 ## 💡 **Usage Examples**
 
 ### **Profile Management**
@@ -218,6 +237,26 @@ Add this configuration to your file:
 "Soft reset DB Node ocid1.dbnode.oc1..."
 ```
 
+### **Networking Management** 🆕
+```bash
+# VCN operations
+"List all VCNs in compartment ocid1.compartment.oc1..."
+"Show me details for VCN ocid1.vcn.oc1..."
+
+# Subnet operations
+"List all subnets in VCN ocid1.vcn.oc1..."
+"Get details for subnet ocid1.subnet.oc1..."
+
+# Security operations
+"Show me all security lists in compartment X"
+"List all network security groups in VCN Y"
+"Get security rules for security list ocid1.securitylist.oc1..."
+
+# VNIC operations
+"List all VNICs for instance ocid1.instance.oc1..."
+"Show me details for VNIC ocid1.vnic.oc1..."
+```
+
 ### **Resource Discovery**
 ```bash
 # List compartments
@@ -226,6 +265,7 @@ Add this configuration to your file:
 # Cross-resource queries
 "Show me all running instances in compartment X"
 "List all DB Systems and their current states"
+"Show me the complete network topology for compartment X"
 ```
 
 ## 🚀 **Recent Improvements**
