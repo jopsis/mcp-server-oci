@@ -101,6 +101,16 @@ from mcp_server_oci.tools.cost import (
     list_budgets,
     get_budget,
 )
+from mcp_server_oci.tools.monitoring import (
+    list_alarms,
+    get_alarm,
+    get_alarm_history,
+    list_metrics,
+    query_metric_data,
+    search_logs,
+    list_log_groups,
+    list_logs,
+)
 # DB Systems tools (our corrected module)
 from mcp_server_oci.tools.dbsystems import (
     list_db_systems,
@@ -246,6 +256,9 @@ def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
         kms_vault_client = oci.key_management.KmsVaultClient(config)
         usage_api_client = oci.usage_api.UsageapiClient(config)
         budget_client = oci.budget.BudgetClient(config)
+        monitoring_client = oci.monitoring.MonitoringClient(config)
+        logging_search_client = oci.loggingsearch.LogSearchClient(config)
+        logging_client = oci.logging.LoggingManagementClient(config)
 
         oci_clients = {
             "compute": compute_client,
@@ -260,6 +273,9 @@ def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
             "kms_vault": kms_vault_client,
             "usage_api": usage_api_client,
             "budget": budget_client,
+            "monitoring": monitoring_client,
+            "logging_search": logging_search_client,
+            "logging": logging_client,
             "config": config,
         }
 
@@ -1567,6 +1583,173 @@ async def mcp_get_budget(ctx: Context, budget_id: str) -> Dict[str, Any]:
         Detailed budget information including targets, alert rules, and spend tracking
     """
     return get_budget(oci_clients["budget"], budget_id)
+
+
+# Monitoring & Observability - Alarms
+@mcp.tool(name="list_alarms")
+@mcp_tool_wrapper(
+    start_msg="Listing alarms in compartment {compartment_id}...",
+    error_prefix="Error listing alarms"
+)
+async def mcp_list_alarms(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all alarms in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list alarms from
+
+    Returns:
+        List of alarms with their query, severity, state, and destinations
+    """
+    return list_alarms(oci_clients["monitoring"], compartment_id)
+
+
+@mcp.tool(name="get_alarm")
+@mcp_tool_wrapper(
+    start_msg="Getting alarm details for {alarm_id}...",
+    success_msg="Retrieved alarm details successfully",
+    error_prefix="Error getting alarm details"
+)
+async def mcp_get_alarm(ctx: Context, alarm_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific alarm.
+
+    Args:
+        alarm_id: OCID of the alarm to retrieve
+
+    Returns:
+        Detailed alarm information including query, thresholds, and notification settings
+    """
+    return get_alarm(oci_clients["monitoring"], alarm_id)
+
+
+@mcp.tool(name="get_alarm_history")
+@mcp_tool_wrapper(
+    start_msg="Getting alarm history for {alarm_id}...",
+    error_prefix="Error getting alarm history"
+)
+async def mcp_get_alarm_history(ctx: Context, alarm_id: str,
+                                alarm_historytype: str = "STATE_TRANSITION_HISTORY") -> List[Dict[str, Any]]:
+    """
+    Get alarm state history.
+
+    Args:
+        alarm_id: OCID of the alarm
+        alarm_historytype: Type of history (STATE_TRANSITION_HISTORY, STATE_HISTORY, RULE_HISTORY)
+
+    Returns:
+        List of alarm history entries with timestamps and state changes
+    """
+    return get_alarm_history(oci_clients["monitoring"], alarm_id, alarm_historytype)
+
+
+# Monitoring & Observability - Metrics
+@mcp.tool(name="list_metrics")
+@mcp_tool_wrapper(
+    start_msg="Listing metrics in compartment {compartment_id}...",
+    error_prefix="Error listing metrics"
+)
+async def mcp_list_metrics(ctx: Context, compartment_id: str,
+                           namespace: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    List available metrics in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment
+        namespace: Optional namespace to filter metrics (e.g., oci_computeagent, oci_blockstore)
+
+    Returns:
+        List of available metrics with their namespaces and dimensions
+    """
+    return list_metrics(oci_clients["monitoring"], compartment_id, namespace)
+
+
+@mcp.tool(name="query_metric_data")
+@mcp_tool_wrapper(
+    start_msg="Querying metric data...",
+    error_prefix="Error querying metric data"
+)
+async def mcp_query_metric_data(ctx: Context, compartment_id: str, query: str,
+                                start_time: str, end_time: str,
+                                resolution: str = "1m") -> List[Dict[str, Any]]:
+    """
+    Query metric data for a time range using MQL.
+
+    Args:
+        compartment_id: OCID of the compartment
+        query: Metric query in MQL format (e.g., "CpuUtilization[1m].mean()")
+        start_time: Start time in ISO format (YYYY-MM-DDTHH:MM:SSZ)
+        end_time: End time in ISO format (YYYY-MM-DDTHH:MM:SSZ)
+        resolution: Data resolution (1m, 5m, 1h)
+
+    Returns:
+        List of metric data points with timestamps and values
+    """
+    return query_metric_data(oci_clients["monitoring"], compartment_id, query,
+                           start_time, end_time, resolution)
+
+
+# Monitoring & Observability - Logs
+@mcp.tool(name="search_logs")
+@mcp_tool_wrapper(
+    start_msg="Searching logs...",
+    error_prefix="Error searching logs"
+)
+async def mcp_search_logs(ctx: Context, time_start: str, time_end: str,
+                         search_query: str) -> List[Dict[str, Any]]:
+    """
+    Search logs using the Logging Search API.
+
+    Args:
+        time_start: Start time in ISO format (YYYY-MM-DDTHH:MM:SSZ)
+        time_end: End time in ISO format (YYYY-MM-DDTHH:MM:SSZ)
+        search_query: Search query string
+
+    Returns:
+        List of log entries matching the search criteria
+    """
+    search_details = {
+        'time_start': time_start,
+        'time_end': time_end,
+        'search_query': search_query,
+    }
+    return search_logs(oci_clients["logging_search"], search_details)
+
+
+@mcp.tool(name="list_log_groups")
+@mcp_tool_wrapper(
+    start_msg="Listing log groups in compartment {compartment_id}...",
+    error_prefix="Error listing log groups"
+)
+async def mcp_list_log_groups(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all log groups in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment to list log groups from
+
+    Returns:
+        List of log groups with their display names and lifecycle states
+    """
+    return list_log_groups(oci_clients["logging"], compartment_id)
+
+
+@mcp.tool(name="list_logs")
+@mcp_tool_wrapper(
+    start_msg="Listing logs in log group {log_group_id}...",
+    error_prefix="Error listing logs"
+)
+async def mcp_list_logs(ctx: Context, log_group_id: str) -> List[Dict[str, Any]]:
+    """
+    List all logs in a log group.
+
+    Args:
+        log_group_id: OCID of the log group
+
+    Returns:
+        List of logs with their types, retention, and enabled state
+    """
+    return list_logs(oci_clients["logging"], log_group_id)
 
 
 def main() -> None:
