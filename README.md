@@ -254,6 +254,15 @@ Add this configuration to your file:
 - `list_regions` - List all available OCI regions
 - `get_tenancy_info` - Get tenancy details including name and home region
 
+### **Security & Encryption** 🆕
+#### KMS Vaults
+- `list_vaults` - List all KMS vaults in a compartment
+- `get_vault` - Get detailed vault information including crypto and management endpoints
+
+#### Encryption Keys
+- `list_keys` - List all encryption keys in a vault's compartment
+- `get_key` - Get detailed key information including algorithm, shape, and versions
+
 ## 💡 **Usage Examples**
 
 ### **Profile Management**
@@ -428,6 +437,25 @@ Add this configuration to your file:
 "Show me tenancy information"
 ```
 
+### **Security & Encryption** 🆕
+```bash
+# KMS Vaults
+"List all vaults in compartment X"
+"Show me details for vault ocid1.vault.oc1..."
+"What is the management endpoint for this vault?"
+"Is this vault primary or replica?"
+
+# Encryption Keys
+"List all encryption keys in vault Y"
+"Show me details for key ocid1.key.oc1..."
+"What algorithm and protection mode does this key use?"
+"What is the current key version?"
+
+# Key management workflow
+"First, get vault details to obtain the management_endpoint"
+"Then, use that endpoint to list or get keys in that vault"
+```
+
 ### **Resource Discovery**
 ```bash
 # List compartments
@@ -441,7 +469,16 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.11 - Infrastructure Utilities (Latest) 🏗️
+### v1.12 - Security & Encryption Tools (Latest) 🔐
+- **4 new security tools**: KMS Vaults and Encryption Keys
+- **KMS Vaults**: List/get vaults with crypto and management endpoints
+- **Encryption Keys**: List/get keys with algorithm, protection mode, and key shape
+- Complete KMS coverage: Vault management and key discovery
+- Dynamic KMS Management client creation using vault endpoints
+- Total MCP tools increased from 61 to 65
+- Added comprehensive security & encryption usage examples in README
+
+### v1.11 - Infrastructure Utilities 🏗️
 - **7 new infrastructure tools**: Availability Domains, Fault Domains, Images, Shapes, Regions, and Tenancy
 - **Availability/Fault Domains**: List ADs and FDs for high availability planning
 - **Compute Images**: List/get images with OS versions and launch options
