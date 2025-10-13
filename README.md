@@ -229,6 +229,15 @@ Add this configuration to your file:
 - `list_file_systems` - List all File Storage file systems in a compartment and AD
 - `get_file_system` - Get detailed file system information including metered bytes and snapshots
 
+### **Load Balancers** 🆕
+#### Classic Load Balancers
+- `list_load_balancers` - List all classic load balancers in a compartment
+- `get_load_balancer` - Get detailed load balancer information including backend sets, listeners, and certificates
+
+#### Network Load Balancers
+- `list_network_load_balancers` - List all network load balancers in a compartment
+- `get_network_load_balancer` - Get detailed network load balancer information including backend sets and listeners
+
 ## 💡 **Usage Examples**
 
 ### **Profile Management**
@@ -359,6 +368,25 @@ Add this configuration to your file:
 "How many bytes is this file system using?"
 ```
 
+### **Load Balancer Management** 🆕
+```bash
+# Classic Load Balancers
+"List all load balancers in compartment X"
+"Show me details for load balancer ocid1.loadbalancer.oc1..."
+"What backend sets and listeners does this load balancer have?"
+"Show me health check configuration for this load balancer"
+
+# Network Load Balancers
+"List all network load balancers in compartment Y"
+"Show me details for network load balancer ocid1.networkloadbalancer.oc1..."
+"What is the backend configuration for this NLB?"
+"Is source IP preservation enabled on this network load balancer?"
+
+# Load balancer analysis
+"Show me all load balancers and their IP addresses"
+"Which load balancers are private vs public?"
+```
+
 ### **Resource Discovery**
 ```bash
 # List compartments
@@ -372,7 +400,15 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.9 - Identity & Access Management Tools (Latest) 🔐
+### v1.10 - Load Balancer Tools (Latest) ⚖️
+- **4 new load balancer tools**: Classic Load Balancers and Network Load Balancers
+- **Classic Load Balancers**: List/get LBs with backend sets, listeners, and certificates
+- **Network Load Balancers**: List/get NLBs with backend configuration and IP preservation
+- Complete load balancing coverage: Layer 7 (classic) and Layer 4 (network) load balancers
+- Total MCP tools increased from 50 to 54
+- Added comprehensive load balancer usage examples in README
+
+### v1.9 - Identity & Access Management Tools 🔐
 - **8 new IAM tools**: Users, Groups, Policies, Dynamic Groups
 - **Security auditing**: Review user capabilities, MFA status, and group memberships
 - **Policy management**: List and inspect all IAM policy statements
