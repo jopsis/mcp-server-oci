@@ -8,9 +8,10 @@ This project implements a Model Context Protocol (MCP) server for Oracle Cloud I
 
 - **Dynamic Profile Selection**: Switch between OCI profiles/tenancies without restarting the server
 - Connection to Oracle Cloud using standard OCI CLI configuration
-- Comprehensive tools to list and manage OCI resources
+- **85 comprehensive tools** to list and manage OCI resources across 11+ service categories
 - Instance lifecycle management (start, stop)
 - Database Systems and DB Nodes management
+- **Container Engine for Kubernetes (OKE)** cluster and node pool management
 - Integration with the MCP protocol to facilitate access from Claude Desktop
 
 ## Prerequisites
@@ -288,6 +289,20 @@ Add this configuration to your file:
 - `list_log_groups` - List all log groups in a compartment
 - `list_logs` - List all logs in a log group with types and retention
 
+### **Container Engine for Kubernetes (OKE)** 🆕
+#### Clusters
+- `list_oke_clusters` - List all OKE clusters with Kubernetes version and endpoints
+- `get_oke_cluster` - Get detailed cluster info including network config, add-ons, and available upgrades
+- `get_oke_cluster_kubeconfig` - Get kubeconfig file content for kubectl access
+
+#### Node Pools
+- `list_oke_node_pools` - List node pools with shape, image, and placement configuration
+- `get_oke_node_pool` - Get detailed node pool info including individual nodes, eviction settings, and cycling details
+
+#### Work Requests
+- `list_oke_work_requests` - List async operations (create, update, delete) for OKE resources
+- `get_oke_work_request` - Get detailed work request status and progress
+
 ## 💡 **Usage Examples**
 
 ### **Profile Management**
@@ -529,6 +544,39 @@ Add this configuration to your file:
 "Search logs for errors related to database connections"
 ```
 
+### **Container Engine for Kubernetes (OKE)** 🆕
+```bash
+# Clusters
+"List all OKE clusters in compartment X"
+"Show me details for cluster ocid1.cluster.oc1..."
+"What Kubernetes version is this cluster running?"
+"What upgrades are available for my cluster?"
+"Get the kubeconfig for cluster ocid1.cluster.oc1..."
+"What are the public and private endpoints for this cluster?"
+
+# Node Pools
+"List all node pools in compartment Y"
+"Show me node pools for cluster Z"
+"Get details for node pool ocid1.nodepool.oc1..."
+"What is the shape and size of this node pool?"
+"Show me individual nodes in this node pool"
+"What is the Kubernetes version of the node pool?"
+
+# Work Requests
+"List all OKE work requests in compartment A"
+"Show me work requests for cluster B"
+"Get details for work request ocid1.clustersworkrequest.oc1..."
+"What operations are currently in progress?"
+"Show me the status of cluster creation"
+
+# Kubernetes cluster management workflows
+"List all clusters and their Kubernetes versions"
+"Show me clusters that have available upgrades"
+"Get kubeconfig for all clusters in my compartment"
+"Which node pools are running outdated Kubernetes versions?"
+"Show me all work requests that failed"
+```
+
 ### **Resource Discovery**
 ```bash
 # List compartments
@@ -542,7 +590,17 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.14 - Monitoring & Observability Tools (Latest) 🔍
+### v1.15 - Container Engine for Kubernetes (OKE) Tools (Latest) ☸️
+- **7 new OKE tools**: Clusters, Node Pools, and Work Requests
+- **Clusters**: List/get clusters with Kubernetes version, endpoints, network config, and available upgrades
+- **Kubeconfig**: Get kubeconfig file content for kubectl access to clusters
+- **Node Pools**: List/get node pools with detailed node information, placement config, and eviction settings
+- **Work Requests**: Track async operations (create, update, delete) for OKE resources
+- Essential for managing Kubernetes infrastructure on OCI
+- Total MCP tools increased from 78 to 85
+- Added comprehensive OKE usage examples in README
+
+### v1.14 - Monitoring & Observability Tools 🔍
 - **8 new monitoring tools**: Alarms, Metrics, and Logs
 - **Alarms**: List/get alarms with severity, query history, and state transitions
 - **Metrics**: List metrics, query time-series data with MQL for performance analysis

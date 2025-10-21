@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcp-server-oci"
-version = "0.1.0"
+version = "0.2.0"
 description = "Model Context Protocol (MCP) server for Oracle Cloud Infrastructure"
 authors = [{name = "MCP OCI Server Team"}]
 readme = "README.md"

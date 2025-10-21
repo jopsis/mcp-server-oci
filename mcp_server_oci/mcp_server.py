@@ -125,6 +125,15 @@ from mcp_server_oci.tools.dbsystems import (
     start_db_system_all_nodes,
     stop_db_system_all_nodes,
 )
+from mcp_server_oci.tools.oke import (
+    list_clusters,
+    get_cluster,
+    list_node_pools,
+    get_node_pool,
+    get_cluster_kubeconfig,
+    list_work_requests,
+    get_work_request,
+)
 
 # Setup logging
 logger.remove()
@@ -259,6 +268,7 @@ def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
         monitoring_client = oci.monitoring.MonitoringClient(config)
         logging_search_client = oci.loggingsearch.LogSearchClient(config)
         logging_client = oci.logging.LoggingManagementClient(config)
+        container_engine_client = oci.container_engine.ContainerEngineClient(config)
 
         oci_clients = {
             "compute": compute_client,
@@ -276,6 +286,7 @@ def init_oci_clients(profile: str = "DEFAULT") -> Dict[str, Any]:
             "monitoring": monitoring_client,
             "logging_search": logging_search_client,
             "logging": logging_client,
+            "container_engine": container_engine_client,
             "config": config,
         }
 
@@ -1750,6 +1761,173 @@ async def mcp_list_logs(ctx: Context, log_group_id: str) -> List[Dict[str, Any]]
         List of logs with their types, retention, and enabled state
     """
     return list_logs(oci_clients["logging"], log_group_id)
+
+
+# ============================================================================
+# Container Engine for Kubernetes (OKE) Tools
+# ============================================================================
+
+@mcp.tool(name="list_oke_clusters")
+@mcp_tool_wrapper(
+    start_msg="Listing OKE clusters in compartment {compartment_id}...",
+    error_prefix="Error listing OKE clusters"
+)
+async def mcp_list_oke_clusters(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """
+    List all OKE (Container Engine for Kubernetes) clusters in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment
+
+    Returns:
+        List of OKE clusters with their details including Kubernetes version, endpoints, and lifecycle state
+    """
+    return list_clusters(oci_clients["container_engine"], compartment_id)
+
+
+@mcp.tool(name="get_oke_cluster")
+@mcp_tool_wrapper(
+    start_msg="Getting details for OKE cluster {cluster_id}...",
+    error_prefix="Error getting OKE cluster details"
+)
+async def mcp_get_oke_cluster(ctx: Context, cluster_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific OKE cluster.
+
+    Args:
+        cluster_id: OCID of the cluster
+
+    Returns:
+        Detailed cluster information including:
+        - Kubernetes version and available upgrades
+        - Cluster endpoints (public/private)
+        - Network configuration (VCN, subnets, CIDR blocks)
+        - Add-ons configuration (dashboard, tiller)
+        - Image policy settings
+        - Cluster metadata and options
+    """
+    return get_cluster(oci_clients["container_engine"], cluster_id)
+
+
+@mcp.tool(name="list_oke_node_pools")
+@mcp_tool_wrapper(
+    start_msg="Listing node pools in compartment {compartment_id}...",
+    error_prefix="Error listing node pools"
+)
+async def mcp_list_oke_node_pools(
+    ctx: Context,
+    compartment_id: str,
+    cluster_id: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """
+    List all node pools in a compartment, optionally filtered by cluster.
+
+    Args:
+        compartment_id: OCID of the compartment
+        cluster_id: Optional OCID of the cluster to filter by
+
+    Returns:
+        List of node pools with their details including:
+        - Node shape and image information
+        - Kubernetes version
+        - Placement configuration (ADs, subnets)
+        - Node count per subnet
+        - Lifecycle state
+    """
+    return list_node_pools(oci_clients["container_engine"], compartment_id, cluster_id)
+
+
+@mcp.tool(name="get_oke_node_pool")
+@mcp_tool_wrapper(
+    start_msg="Getting details for node pool {node_pool_id}...",
+    error_prefix="Error getting node pool details"
+)
+async def mcp_get_oke_node_pool(ctx: Context, node_pool_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific node pool.
+
+    Args:
+        node_pool_id: OCID of the node pool
+
+    Returns:
+        Detailed node pool information including:
+        - Node configuration (shape, image, SSH keys)
+        - Individual node details (IPs, state, fault domains)
+        - Placement configuration across ADs
+        - Node eviction settings
+        - Node pool cycling details
+        - Initial node labels
+        - Security settings (NSGs, encryption)
+    """
+    return get_node_pool(oci_clients["container_engine"], node_pool_id)
+
+
+@mcp.tool(name="get_oke_cluster_kubeconfig")
+@mcp_tool_wrapper(
+    start_msg="Getting kubeconfig for cluster {cluster_id}...",
+    error_prefix="Error getting cluster kubeconfig"
+)
+async def mcp_get_oke_cluster_kubeconfig(ctx: Context, cluster_id: str) -> Dict[str, Any]:
+    """
+    Get the kubeconfig file content for accessing an OKE cluster.
+
+    Args:
+        cluster_id: OCID of the cluster
+
+    Returns:
+        Kubeconfig content in YAML format that can be saved to ~/.kube/config
+        or used with kubectl --kubeconfig flag
+    """
+    return get_cluster_kubeconfig(oci_clients["container_engine"], cluster_id)
+
+
+@mcp.tool(name="list_oke_work_requests")
+@mcp_tool_wrapper(
+    start_msg="Listing OKE work requests in compartment {compartment_id}...",
+    error_prefix="Error listing OKE work requests"
+)
+async def mcp_list_oke_work_requests(
+    ctx: Context,
+    compartment_id: str,
+    resource_id: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """
+    List work requests (async operations) for OKE resources in a compartment.
+
+    Args:
+        compartment_id: OCID of the compartment
+        resource_id: Optional OCID of a specific resource (cluster or node pool) to filter by
+
+    Returns:
+        List of work requests with their details including:
+        - Operation type (create, update, delete, etc.)
+        - Status and completion percentage
+        - Associated resources
+        - Timestamps (accepted, started, finished)
+    """
+    return list_work_requests(oci_clients["container_engine"], compartment_id, resource_id)
+
+
+@mcp.tool(name="get_oke_work_request")
+@mcp_tool_wrapper(
+    start_msg="Getting details for work request {work_request_id}...",
+    error_prefix="Error getting work request details"
+)
+async def mcp_get_oke_work_request(ctx: Context, work_request_id: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific OKE work request.
+
+    Args:
+        work_request_id: OCID of the work request
+
+    Returns:
+        Detailed work request information including:
+        - Operation type and status
+        - Completion percentage
+        - Associated resources and actions
+        - Timing information
+    """
+    return get_work_request(oci_clients["container_engine"], work_request_id)
 
 
 def main() -> None:
