@@ -21,8 +21,11 @@ def list_compartments(identity_client: oci.identity.IdentityClient) -> List[Dict
         List of compartments with their details
     """
     try:
-        # Get tenant ID (root compartment)
-        tenant_id = identity_client.get_user(identity_client.base_client.config.get("user")).data.compartment_id
+        # Get tenant ID (root compartment) from config directly. Deriving it
+        # via identity_client.get_user(user_ocid) fails with 404
+        # NotAuthorizedOrNotFound for federated / IAM-Domain users because
+        # those users are not visible through the legacy Identity endpoint.
+        tenant_id = identity_client.base_client.config.get("tenancy")
         
         # Get all compartments (including nested ones)
         compartments = []
