@@ -61,7 +61,14 @@ def list_available_profiles() -> List[Dict[str, str]]:
         config.read(config_path)
 
         profiles = []
-        for section in config.sections():
+        # configparser.sections() excludes the DEFAULT section, but the OCI
+        # CLI standard config uses [DEFAULT] as the primary profile. Include
+        # it explicitly whenever defaults are present.
+        section_names = list(config.sections())
+        if config.defaults() or config.has_section("DEFAULT"):
+            if "DEFAULT" not in section_names:
+                section_names.insert(0, "DEFAULT")
+        for section in section_names:
             profile_info = {
                 "name": section,
                 "user": config.get(section, "user", fallback="N/A"),
