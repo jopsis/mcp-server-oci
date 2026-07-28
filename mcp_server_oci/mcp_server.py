@@ -125,6 +125,18 @@ from mcp_server_oci.tools.dbsystems import (
     start_db_system_all_nodes,
     stop_db_system_all_nodes,
 )
+from mcp_server_oci.tools.exadata import (
+    list_cloud_exadata_infrastructures,
+    get_cloud_exadata_infrastructure,
+    list_cloud_vm_clusters,
+    get_cloud_vm_cluster,
+    list_cloud_autonomous_vm_clusters,
+    list_data_guard_associations,
+    get_data_guard_association,
+    list_backups,
+    list_maintenance_runs,
+    get_maintenance_run,
+)
 from mcp_server_oci.tools.oke import (
     list_clusters,
     get_cluster,
@@ -595,6 +607,134 @@ async def mcp_stop_db_system(ctx: Context, db_system_id: str, compartment_id: st
     Note: compartment_id required to enumerate nodes correctly.
     """
     return stop_db_system_all_nodes(oci_clients["database"], db_system_id, compartment_id, soft=soft)
+
+
+# Exadata Cloud Service tools
+@mcp.tool(name="list_cloud_exadata_infrastructures")
+@mcp_tool_wrapper(
+    start_msg="Listing Cloud Exadata Infrastructures in compartment {compartment_id}...",
+    error_prefix="Error listing Cloud Exadata Infrastructures"
+)
+async def mcp_list_cloud_exadata_infrastructures(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """List Cloud Exadata Infrastructures (Exadata Cloud Service) in a compartment."""
+    return list_cloud_exadata_infrastructures(oci_clients["database"], compartment_id)
+
+
+@mcp.tool(name="get_cloud_exadata_infrastructure")
+@mcp_tool_wrapper(
+    start_msg="Getting Cloud Exadata Infrastructure {cloud_exadata_infrastructure_id}...",
+    error_prefix="Error getting Cloud Exadata Infrastructure"
+)
+async def mcp_get_cloud_exadata_infrastructure(ctx: Context, cloud_exadata_infrastructure_id: str) -> Dict[str, Any]:
+    """Get details of a Cloud Exadata Infrastructure by OCID."""
+    return get_cloud_exadata_infrastructure(oci_clients["database"], cloud_exadata_infrastructure_id)
+
+
+@mcp.tool(name="list_cloud_vm_clusters")
+@mcp_tool_wrapper(
+    start_msg="Listing Cloud VM Clusters in compartment {compartment_id}...",
+    error_prefix="Error listing Cloud VM Clusters"
+)
+async def mcp_list_cloud_vm_clusters(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """List Cloud VM Clusters (Exadata Cloud Service) in a compartment."""
+    return list_cloud_vm_clusters(oci_clients["database"], compartment_id)
+
+
+@mcp.tool(name="get_cloud_vm_cluster")
+@mcp_tool_wrapper(
+    start_msg="Getting Cloud VM Cluster {cloud_vm_cluster_id}...",
+    error_prefix="Error getting Cloud VM Cluster"
+)
+async def mcp_get_cloud_vm_cluster(ctx: Context, cloud_vm_cluster_id: str) -> Dict[str, Any]:
+    """Get details of a Cloud VM Cluster by OCID."""
+    return get_cloud_vm_cluster(oci_clients["database"], cloud_vm_cluster_id)
+
+
+@mcp.tool(name="list_cloud_autonomous_vm_clusters")
+@mcp_tool_wrapper(
+    start_msg="Listing Cloud Autonomous VM Clusters in compartment {compartment_id}...",
+    error_prefix="Error listing Cloud Autonomous VM Clusters"
+)
+async def mcp_list_cloud_autonomous_vm_clusters(ctx: Context, compartment_id: str) -> List[Dict[str, Any]]:
+    """List Cloud Autonomous VM Clusters in a compartment."""
+    return list_cloud_autonomous_vm_clusters(oci_clients["database"], compartment_id)
+
+
+@mcp.tool(name="list_data_guard_associations")
+@mcp_tool_wrapper(
+    start_msg="Listing Data Guard associations for database {database_id}...",
+    error_prefix="Error listing Data Guard associations"
+)
+async def mcp_list_data_guard_associations(ctx: Context, database_id: str) -> List[Dict[str, Any]]:
+    """List Data Guard associations for a Database (call on the primary DB OCID)."""
+    return list_data_guard_associations(oci_clients["database"], database_id)
+
+
+@mcp.tool(name="get_data_guard_association")
+@mcp_tool_wrapper(
+    start_msg="Getting Data Guard association {data_guard_association_id}...",
+    error_prefix="Error getting Data Guard association"
+)
+async def mcp_get_data_guard_association(
+    ctx: Context, database_id: str, data_guard_association_id: str
+) -> Dict[str, Any]:
+    """Get details of a specific Data Guard association."""
+    return get_data_guard_association(oci_clients["database"], database_id, data_guard_association_id)
+
+
+@mcp.tool(name="list_backups")
+@mcp_tool_wrapper(
+    start_msg="Listing database backups...",
+    error_prefix="Error listing backups"
+)
+async def mcp_list_backups(
+    ctx: Context,
+    compartment_id: Optional[str] = None,
+    database_id: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    List database backups. Provide either compartment_id or database_id
+    (or both). One of the two is required.
+    """
+    return list_backups(
+        oci_clients["database"],
+        compartment_id=compartment_id,
+        database_id=database_id,
+    )
+
+
+@mcp.tool(name="list_maintenance_runs")
+@mcp_tool_wrapper(
+    start_msg="Listing maintenance runs in compartment {compartment_id}...",
+    error_prefix="Error listing maintenance runs"
+)
+async def mcp_list_maintenance_runs(
+    ctx: Context,
+    compartment_id: str,
+    target_resource_id: Optional[str] = None,
+    target_resource_type: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    List maintenance runs in a compartment. Optional filters:
+    target_resource_id (e.g. a Cloud Exadata Infrastructure OCID) and
+    target_resource_type.
+    """
+    return list_maintenance_runs(
+        oci_clients["database"],
+        compartment_id,
+        target_resource_id=target_resource_id,
+        target_resource_type=target_resource_type,
+    )
+
+
+@mcp.tool(name="get_maintenance_run")
+@mcp_tool_wrapper(
+    start_msg="Getting maintenance run {maintenance_run_id}...",
+    error_prefix="Error getting maintenance run"
+)
+async def mcp_get_maintenance_run(ctx: Context, maintenance_run_id: str) -> Dict[str, Any]:
+    """Get details of a single maintenance run."""
+    return get_maintenance_run(oci_clients["database"], maintenance_run_id)
 
 
 # Network tools - VCNs
