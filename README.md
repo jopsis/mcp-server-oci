@@ -8,9 +8,10 @@ This project implements a Model Context Protocol (MCP) server for Oracle Cloud I
 
 - **Dynamic Profile Selection**: Switch between OCI profiles/tenancies without restarting the server
 - Connection to Oracle Cloud using standard OCI CLI configuration
-- **85 comprehensive tools** to list and manage OCI resources across 11+ service categories
+- **95 comprehensive tools** to list and manage OCI resources across 11+ service categories
 - Instance lifecycle management (start, stop)
 - Database Systems and DB Nodes management
+- **Exadata Cloud Service** (Cloud Exadata Infrastructure, VM Clusters, Data Guard, backups, maintenance runs)
 - **Container Engine for Kubernetes (OKE)** cluster and node pool management
 - Integration with the MCP protocol to facilitate access from Claude Desktop
 
@@ -194,6 +195,22 @@ Add this configuration to your file:
 #### Autonomous Databases 🆕
 - `list_autonomous_databases` - List Autonomous Databases with workload type and connection info
 - `get_autonomous_database` - Get detailed ADB info including wallet info and auto-scaling settings
+
+#### Exadata Cloud Service 🆕
+- `list_cloud_exadata_infrastructures` - List Cloud Exadata Infrastructures (fleet hardware) in a compartment
+- `get_cloud_exadata_infrastructure` - Get infra details: shape, activated/max CPU-memory-storage, maintenance windows
+- `list_cloud_vm_clusters` - List Cloud VM Clusters (Exadata Cloud Service RAC)
+- `get_cloud_vm_cluster` - Get VM cluster details: RAC nodes, SCAN DNS/VIPs, GI/system versions, subnets, NSGs
+- `list_cloud_autonomous_vm_clusters` - List Cloud Autonomous VM Clusters (Exadata for Autonomous DB)
+
+#### Data Guard 🆕
+- `list_data_guard_associations` - List DG associations for a Database (query on the primary DB OCID)
+- `get_data_guard_association` - Get a specific DG association: role, peer role, apply lag/rate, protection mode
+
+#### Backups & Maintenance 🆕
+- `list_backups` - List database backups by compartment or database
+- `list_maintenance_runs` - List maintenance runs, optionally filtered by target resource
+- `get_maintenance_run` - Get details of a specific maintenance run
 
 ### **Networking**
 #### Virtual Cloud Networks (VCNs)
