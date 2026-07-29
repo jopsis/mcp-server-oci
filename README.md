@@ -607,7 +607,16 @@ Add this configuration to your file:
 
 ## 🚀 **Recent Improvements**
 
-### v1.15 - Container Engine for Kubernetes (OKE) Tools (Latest) ☸️
+### v1.16 - Exadata Cloud Service Tools (Latest) 🗄️
+- **10 new tools**: Cloud Exadata Infrastructure, Cloud VM Clusters, Cloud Autonomous VM Clusters, Data Guard, Backups, and Maintenance Runs
+- **Exadata Cloud Service**: List/get Cloud Exadata Infrastructures and Cloud VM Clusters with RAC, SCAN DNS, and GI/system version details
+- **Data Guard**: List/get Data Guard associations with role, apply lag/rate, and protection mode
+- **Backups & Maintenance**: List backups by compartment/database, list/get maintenance runs
+- Total MCP tools increased from 85 to 95
+- Bug fixes: `list_compartments` now derives the tenancy OCID from config instead of `get_user`, fixing 404 errors for federated/IAM-Domain users; `list_available_profiles` now includes the `[DEFAULT]` profile section
+- Added comprehensive Exadata Cloud Service usage examples in README
+
+### v1.15 - Container Engine for Kubernetes (OKE) Tools ☸️
 - **7 new OKE tools**: Clusters, Node Pools, and Work Requests
 - **Clusters**: List/get clusters with Kubernetes version, endpoints, network config, and available upgrades
 - **Kubeconfig**: Get kubeconfig file content for kubectl access to clusters
