@@ -11,7 +11,11 @@ from functools import wraps
 import oci
 from loguru import logger
 
-from mcp.server.fastmcp import FastMCP, Context
+try:
+    # mcp >= 2.0 renamed FastMCP to MCPServer
+    from mcp.server.mcpserver import MCPServer as FastMCP, Context
+except ImportError:  # mcp 1.x
+    from mcp.server.fastmcp import FastMCP, Context
 from mcp_server_oci.config import (
     DEFAULT_SSE_PORT,
     DEFAULT_LOG_LEVEL,

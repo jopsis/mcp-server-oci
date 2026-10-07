@@ -13,7 +13,7 @@ pip install -e .
 
 # Comprobar instalación
 echo "Verificando instalación..."
-python -c "from mcp.server.fastmcp import FastMCP; print('MCP SDK instalado correctamente'); import oci; print('OCI SDK instalado correctamente')"
+python -c "import mcp_server_oci.mcp_server; print('MCP SDK instalado correctamente'); import oci; print('OCI SDK instalado correctamente')"
 
 if [ $? -eq 0 ]; then
     echo "✅ Instalación completada correctamente"
